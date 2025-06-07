@@ -1,4 +1,7 @@
 #include "perceptron.hpp"
+#include <filesystem>
+
+namespace fs = std::filesystem;
 
 // 현재 시간 문자열 반환 (가중치 저장 파일명에 사용)
 inline std::string getCurrentTimestamp()
@@ -30,6 +33,8 @@ inline void perceptronLayer::loadWeight(const std::string &path)
 // 가중치 파일로 저장 (이름: subject+타임스탬프)
 inline void perceptronLayer::saveWeight()
 {
+    // 경로가 존재하지 않을 수 있으므로 디렉터리를 생성한다
+    fs::create_directories(WEIGHT_DATAPATH);
     std::ofstream test_subject(WEIGHT_DATAPATH + "subject" + getCurrentTimestamp() + ".bin");
     test_subject << weight;
     test_subject << bias;

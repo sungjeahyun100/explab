@@ -12,7 +12,8 @@
 #include <sstream>
 #include "d_matrix.hpp"
 
-const std::string WEIGHT_DATAPATH = "/home/sjh100/explab/test_subject/";
+// 저장 경로는 절대 경로 대신 상대 경로를 사용해 다른 환경에서도 동작하도록 수정
+const std::string WEIGHT_DATAPATH = "test_subject/";
 
 enum class ActivationType {
     ReLU,

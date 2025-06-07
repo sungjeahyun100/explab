@@ -5,7 +5,8 @@
 #define MAXGEN 2500
 namespace fs = std::filesystem;
 
-const std::string DATASET_PATH = "/home/sjh100/바탕화면/explab/dataset/";
+// 절대 경로 대신 상대 경로를 사용해 환경 의존성을 제거
+const std::string DATASET_PATH = "dataset/";
 
 const int BOARDWIDTH = 300;
 const int BOARDHEIGHT = 300;
@@ -243,15 +244,15 @@ void generateGameOfLifeData(int filenum, double ratio) {
     int totalFiles = filenum; // 변경 가능
     double aliveratio = ratio;
 
-    std::cout << "totalFlies:" << totalFiles << "(flie direction: home/sjh100/바탕화면/explab/dataset)" << std::endl;
+    std::cout << "totalFlies:" << totalFiles
+              << " (file direction: " << DATASET_PATH << ")" << std::endl;
     std::cout << "aliveratio:" << aliveratio << std::endl;
     std::cout << "max genaration:" << MAXGEN << std::endl;
     std::cout << "pattern size:" << HEIGHT << " * " << WIDTH << std::endl;
     std::cout << "board size:" << BOARDHEIGHT << " * " << BOARDWIDTH << std::endl;
 
-    const char *commend1 = "find /home/sjh100/바탕화면/explab/dataset/ -type f -delete";//DATASET_PATH 부분,
-
-    std::system(commend1);
+    std::string clearCmd = "find " + DATASET_PATH + " -type f -delete";
+    std::system(clearCmd.c_str());
 
     auto startTime = std::chrono::steady_clock::now();
 
