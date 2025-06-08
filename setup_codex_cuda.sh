@@ -15,9 +15,10 @@ cd build
 # 3) nvcc로 컴파일
 #    -std=c++17, libcurl, pthread, (nlohmann/json 헤더는 상위 디렉터리 json.hpp)
 nvcc -std=c++17 \
-     -I .. \
-     -lcurl -lpthread \
-     ../codex_client.cpp \
-     -o codex_client
+     -I . \
+     codex_client.cpp \
+     -o codex_client \
+     -lcurl \
+     -Xcompiler="-pthread"
 
 echo "✅ Build complete. Run with ./codex_client"
