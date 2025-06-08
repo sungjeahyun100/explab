@@ -5,7 +5,7 @@
 #define MAXGEN 2500
 namespace fs = std::filesystem;
 
-const std::string DATASET_PATH = "/home/sjh100/바탕화면/explab/dataset/";
+const std::string DATASET_PATH = "../dataset/";
 
 const int BOARDWIDTH = 300;
 const int BOARDHEIGHT = 300;
@@ -101,7 +101,7 @@ d_matrix<int> generateFixedRatioPatternWithPadding(int fullHeight, int fullWidth
 
 
 
-void printProgressBar(int current, int total, std::chrono::steady_clock::time_point startTime) {
+void printProgressBar(int current, int total, std::chrono::steady_clock::time_point startTime, std::string processname) {
     int width = 50;
     float progress = static_cast<float>(current) / total;
     int pos = static_cast<int>(width * progress);
@@ -116,6 +116,7 @@ void printProgressBar(int current, int total, std::chrono::steady_clock::time_po
         else std::cout << " ";
     }
     std::cout << "] " << int(progress * 100.0) << "% ";
+    std::cout << '[' << processname << ']';
     std::cout << "(경과 시간: " << elapsedSec << " 초)\r";
     std::cout.flush();
 }
@@ -243,13 +244,13 @@ void generateGameOfLifeData(int filenum, double ratio) {
     int totalFiles = filenum; // 변경 가능
     double aliveratio = ratio;
 
-    std::cout << "totalFlies:" << totalFiles << "(flie direction: home/sjh100/바탕화면/explab/dataset)" << std::endl;
+    std::cout << "totalFlies:" << totalFiles << "(flie direction: ../dataset)" << std::endl;
     std::cout << "aliveratio:" << aliveratio << std::endl;
     std::cout << "max genaration:" << MAXGEN << std::endl;
     std::cout << "pattern size:" << HEIGHT << " * " << WIDTH << std::endl;
     std::cout << "board size:" << BOARDHEIGHT << " * " << BOARDWIDTH << std::endl;
 
-    const char *commend1 = "find /home/sjh100/바탕화면/explab/dataset/ -type f -delete";//DATASET_PATH 부분,
+    const char *commend1 = "find ../dataset/ -type f -delete";//DATASET_PATH 부분,
 
     std::system(commend1);
 
@@ -288,7 +289,7 @@ void generateGameOfLifeData(int filenum, double ratio) {
         }
 
         fout.close();
-        printProgressBar(fileId, totalFiles, startTime);
+        printProgressBar(fileId, totalFiles, startTime, "");
     }
     std::cout << std::endl << "[Done] Dataset generation complete." << std::endl;
 

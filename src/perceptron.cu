@@ -1,7 +1,7 @@
 #include "perceptron.hpp"
 
 // 현재 시간 문자열 반환 (가중치 저장 파일명에 사용)
-inline std::string getCurrentTimestamp()
+std::string getCurrentTimestamp()
 {
     auto now = std::chrono::system_clock::now();
     std::time_t t_now = std::chrono::system_clock::to_time_t(now);
@@ -13,7 +13,7 @@ inline std::string getCurrentTimestamp()
 }
 
 // 가중치 파일에서 weight, bias 불러오기
-inline void perceptronLayer::loadWeight(const std::string &path)
+void perceptronLayer::loadWeight(const std::string &path)
 {
     std::ifstream test_subject(path, std::ios::binary);
     if (!test_subject) {
@@ -28,7 +28,7 @@ inline void perceptronLayer::loadWeight(const std::string &path)
 }
 
 // 가중치 파일로 저장 (이름: subject+타임스탬프)
-inline void perceptronLayer::saveWeight()
+void perceptronLayer::saveWeight()
 {
     std::ofstream test_subject(WEIGHT_DATAPATH + "subject" + getCurrentTimestamp() + ".bin");
     test_subject << weight;
@@ -39,14 +39,14 @@ inline void perceptronLayer::saveWeight()
 d_matrix<double>& perceptronLayer::getOutput() { return output; }
 
 // weight, bias를 GPU로 복사
-inline void perceptronLayer::updateWeightInDev() {
+void perceptronLayer::updateWeightInDev() {
     weight.cpyToDev();
     bias.cpyToDev();
 }
 
 // feedforward: z = W x + b, output = z
 // (활성화는 ActivateLayer에서 적용)
-inline void perceptronLayer::feedforward(const d_matrix<double>& raw_input) {
+void perceptronLayer::feedforward(const d_matrix<double>& raw_input) {
     input = raw_input;
 
     z = matrixPlus(matrixMP(weight, input), bias);
@@ -78,14 +78,14 @@ void perceptronLayer::calculateGrad(perceptronLayer* next, const d_matrix<double
 }
 
 // 입력 설정 (input = in)
-inline void ActivateLayer::pushInput(const d_matrix<double>& in){
+void ActivateLayer::pushInput(const d_matrix<double>& in){
     input = in;
     input.cpyToDev();
 }
 
 // 활성화 적용 (output = f(input))
 // 지원: ReLU, LReLU, Identity, Sigmoid
-inline void ActivateLayer::Active(){
+void ActivateLayer::Active(){
     switch (act) {
         case ActivationType::ReLU:
             output = MatrixActivate<double, relu>(input); break;
@@ -105,7 +105,7 @@ inline void ActivateLayer::Active(){
 // LReLU: 1(x>0), 0.01(x<=0)
 // Identity: 1
 // Sigmoid: σ'(x) = σ(x)(1-σ(x))
-inline d_matrix<double> ActivateLayer::d_Active(const d_matrix<double>& z) {
+d_matrix<double> ActivateLayer::d_Active(const d_matrix<double>& z) {
     switch (act) {
         case ActivationType::ReLU:
             return MatrixActivate<double, d_relu>(z);
@@ -121,24 +121,24 @@ inline d_matrix<double> ActivateLayer::d_Active(const d_matrix<double>& z) {
 }
 
 // 활성화 결과 반환
-inline const d_matrix<double>& ActivateLayer::getOutput() const {
+const d_matrix<double>& ActivateLayer::getOutput() const {
     return output; 
 }
 
 // 타겟 입력
-inline void LossLayer::pushTarget(const d_matrix<double>& Target){
+void LossLayer::pushTarget(const d_matrix<double>& Target){
     target = Target;
 }
 
 // 출력 입력
-inline void LossLayer::pushOutput(const d_matrix<double>& Output){
+void LossLayer::pushOutput(const d_matrix<double>& Output){
     output = Output;
 }
 
 // 손실값 반환
 // MSE: L = 1/n Σ(y-p)^2
 // CrossEntropy: L = -Σ y log(softmax(p))
-inline double LossLayer::getLoss(){
+double LossLayer::getLoss(){
     switch (Loss)
     {
     case LossType::MSE: {
@@ -173,7 +173,7 @@ inline double LossLayer::getLoss(){
 // 손실 미분 반환
 // MSE: dL/dz = 2(y-p)
 // CrossEntropy: dL/dz = softmax(p) - y
-inline d_matrix<double> LossLayer::getGrad() {
+d_matrix<double> LossLayer::getGrad() {
     switch (Loss){
     case LossType::MSE: {
         d_matrix<double> diff = matrixPlus(output, ScalaProduct(target, -1.0));
@@ -198,7 +198,7 @@ Adam::~Adam(){}
 // m = β₁ m + (1-β₁)g, v = β₂ v + (1-β₂)g²
 // m̂ = m/(1-β₁ᵗ), v̂ = v/(1-β₂ᵗ)
 // W -= lr * m̂/(sqrt(v̂)+ε)
-inline void Adam::backprop(perceptronLayer* next, const d_matrix<double>& external_delta, const d_matrix<double>& act_deriv)
+void Adam::backprop(perceptronLayer* next, const d_matrix<double>& external_delta, const d_matrix<double>& act_deriv)
 {
     this->calculateGrad(next, external_delta, act_deriv);
     m_W = matrixPlus(ScalaProduct(m_W, beta1), ScalaProduct(this->Gt_W, 1.0 - beta1));
@@ -232,7 +232,7 @@ SGD::~SGD(){}
 
 // SGD 옵티마이저 역전파
 // W -= lr * grad
-inline void SGD::backprop(perceptronLayer* next, const d_matrix<double>& external_delta, const d_matrix<double>& act_deriv)
+void SGD::backprop(perceptronLayer* next, const d_matrix<double>& external_delta, const d_matrix<double>& act_deriv)
 {
     this->calculateGrad(next, external_delta, act_deriv);
     this->weight = matrixPlus(this->weight, ScalaProduct(this->Gt_W, (-1) * this->learning_rate));

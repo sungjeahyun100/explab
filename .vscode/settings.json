@@ -67,6 +67,12 @@
         "map": "cpp",
         "set": "cpp",
         "shared_mutex": "cpp",
-        "cfenv": "cpp"
+        "cfenv": "cpp",
+        "any": "cpp",
+        "forward_list": "cpp",
+        "regex": "cpp",
+        "ranges": "cpp",
+        "cinttypes": "cpp",
+        "valarray": "cpp"
     }
 }

@@ -1,21 +1,35 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# 2) 빌드 디렉터리 준비
-mkdir -p build
+# 프로젝트 루트 경로 설정
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# 3) nvcc로 컴파일
+# 빌드 출력 디렉터리 생성
+BUILD_DIR="$PROJECT_ROOT/build"
+mkdir -p "$BUILD_DIR"
+
+# CUDA 및 공통 소스 파일 포함하여 컴파일
+nvcc -std=c++20 \
+    -I "$PROJECT_ROOT/src" \
+    "$PROJECT_ROOT/exp_sample/GOLexp.cu" \
+    "$PROJECT_ROOT/src/perceptron.cu" \
+    "$PROJECT_ROOT/src/d_matrix.cu" \
+    "$PROJECT_ROOT/src/database.cu" \
+    -o "$BUILD_DIR/codex_exp" \
+    -lcurl \
+    -lcurand \
+    -Xcompiler="-pthread"
+
+echo "✅ build/codex_exp 빌드 완료"
 
 nvcc -std=c++20 \
-  -I ./src \
-  exp_sample/GOLexp.cu \
-  src/perceptron.cu \
-  src/d_matrix.cu \
-  src/database.cu \
-  src/chess.cu \
-  -o build/codex_exp \
-  -lcurl \
-  -lcurand \
-  -Xcompiler="-pthread"
+    -I "$PROJECT_ROOT/src" \
+    "$PROJECT_ROOT/exp_sample/genGOL.cu" \
+    "$PROJECT_ROOT/src/d_matrix.cu" \
+    "$PROJECT_ROOT/src/database.cu" \
+    -o "$BUILD_DIR/genGOLdata" \
+    -lcurl \
+    -Xcompiler="-pthread"
 
-echo "✅ Build complete. Run with ./codex_exp"
+echo "✅ build/genGOLdata 빌드 완료"
+
