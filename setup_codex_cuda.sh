@@ -13,8 +13,8 @@ mkdir -p build
 cd build
 
 # 3) nvcc로 컴파일
-#    -std=c++17, libcurl, pthread, (nlohmann/json 헤더는 상위 디렉터리 json.hpp)
-nvcc -std=c++17 \
+#    -std=c++20, libcurl, pthread, (nlohmann/json 헤더는 상위 디렉터리 json.hpp)
+nvcc -std=c++20 \
      -I .. \
      -lcurl -lpthread \
      ../codex_client.cpp \
