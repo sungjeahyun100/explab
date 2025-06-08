@@ -6,3 +6,8 @@
 Game of Life의 예측 불가능성을 인공지능에게 풀어보게 시키기
 
 transformer 모듈을 적용한 체스 인공지능 만들기
+
+
+docker환경 불러오는 명령어:sudo docker run --rm -it --gpus all   -v "$(pwd):/workspace"   -w /workspace   codex-cuda-dev
+
+
