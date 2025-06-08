@@ -170,6 +170,9 @@ public:
     // getCol: 열 개수를 반환
     int getCol() const { return colSize; }
 
+    // size: 총 원소 개수를 반환
+    int size() const { return rowSize*colSize; }
+
     // fill: 행렬의 모든 요소를 특정 값으로 채우고, 디바이스 메모리로 복사합니다.
     void fill(T value) {
         for (int i = 0; i < rowSize * colSize; ++i) {

@@ -12,5 +12,5 @@ LossLayer loss(BOARDHEIGHT*BOARDWIDTH, 1, LossType::MSE);
 
 
 int main(){
-    generateGameOfLifeData(40, 0.4);
+    
 }
