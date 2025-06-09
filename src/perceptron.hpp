@@ -12,7 +12,7 @@
 #include <sstream>
 #include "d_matrix.hpp"
 
-const std::string WEIGHT_DATAPATH = "/home/sjh100/explab/test_subject/";
+const std::string WEIGHT_DATAPATH = "../test_subject/";
 
 enum class ActivationType {
     ReLU,

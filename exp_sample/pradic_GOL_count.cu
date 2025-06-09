@@ -62,7 +62,13 @@ int main(){
                 printProgressBar(j, dataset.size(), startTime, "Epoch" + std::to_string(epoch+1) + " 진행중...(loss:" + std::to_string(loss.getLoss()) + ")");
             }
         }
-        std::cout << "\n✅ Epoch " << (epoch+1) << " 완료" << std::endl;
+        std::cout << "✅ Epoch " << (epoch+1)
+                  << " 완료! (소요 "
+                  << std::chrono::duration_cast<std::chrono::seconds>(
+                         std::chrono::steady_clock::now() - startTime
+                     ).count()
+                  << "초),                                                                                                                                       "//---
+                  << std::endl;
     }
 
     for(size_t idx=0; idx<dataset.size(); ++idx){
