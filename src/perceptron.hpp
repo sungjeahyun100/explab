@@ -124,14 +124,17 @@ class Adam : public perceptronLayer
 private:
     d_matrix<double> m_W, v_W, m_B, v_B;
     double beta1 = 0.9;
-    double beta2 = 0.999;
-    double epsilon = 1e-8;
-    int t = 1;
+    double beta2 = 0.99;
+    double epsilon = 1e-6;
+    int t = 0;
 
 public:
-    Adam(int i, int o, double lr, InitType Init)
-        : perceptronLayer(i, o, lr, Init),
-          m_W(o, i), v_W(o, i), m_B(o, 1), v_B(o, 1) {}
+    Adam(int i, int o, double lr, InitType Init) : perceptronLayer(i, o, lr, Init), m_W(o, i), v_W(o, i), m_B(o, 1), v_B(o, 1) {
+        m_W = InitWeight<double>(o, i, Init);
+        v_W = InitWeight<double>(o, i, Init);
+        m_B.fill(0.01);
+        v_B.fill(0.01);
+    }
 
     virtual ~Adam();
 

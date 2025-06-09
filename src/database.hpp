@@ -47,6 +47,7 @@
 
 extern const int BOARDWIDTH;
 extern const int BOARDHEIGHT;
+constexpr int BIT_WIDTH = 8;  // 예: 0~255 범위 표현용
 
 __global__ void nextGenKernel(int* current, int* next, int width, int height);
 

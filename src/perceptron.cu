@@ -71,8 +71,6 @@ void perceptronLayer::calculateGrad(perceptronLayer* next, const d_matrix<double
 
     Gt_W = matrixMP<double>(delta, input.transpose());
     Gt_B = delta;
-    Gt_W.cpyToDev();
-    Gt_B.cpyToDev();
 
     cudaDeviceSynchronize();
 }
@@ -143,34 +141,42 @@ void LossLayer::pushOutput(const d_matrix<double>& Output){
 // MSE: L = 1/n Σ(y-p)^2
 // CrossEntropy: L = -Σ y log(softmax(p))
 double LossLayer::getLoss(){
+    // 1) 디바이스→호스트 복사
+    output.cpyToHost();
+    target.cpyToHost();
+
     switch (Loss)
     {
-    case LossType::MSE: {
-        d_matrix<double> diff = matrixPlus(output, ScalaProduct(target, -1.0));
-        diff.cpyToDev();
-        d_matrix<double> squared = HadamardProduct(diff, diff);
-        squared.cpyToDev();
-        return plusAllElements(squared) / static_cast<double>(output.getRow());
-    }
-
-    case LossType::CrossEntropy: {
-        d_matrix<double> prob = softmax(output);
-        prob.cpyToHost();
-        target.cpyToHost();
-
-        double loss = 0.0;
-        for (int i = 0; i < target.getRow(); ++i) {
-            double y = target(i, 0);
-            double p = prob(i, 0);
-            if (y == 1.0) {
-                loss -= std::log(std::max(p, 1e-15));
+        case LossType::MSE: {
+            // MSE: L = 1/N Σ (output − target)², 전부 호스트 계산
+            int N = output.getRow();
+            double sum = 0.0;
+            for (int i = 0; i < N; ++i) {
+                double diff = output(i, 0) - target(i, 0);
+                sum += diff * diff;
             }
+            return sum / static_cast<double>(N);
         }
-        return loss;
-    }
 
-    default:
-        throw std::runtime_error("Unsupported LossType in calculateLoss");
+        case LossType::CrossEntropy: {
+            // 이 구현은 “이진 크로스엔트로피” (비트 단위 분류) 예시입니다.
+            // 필요하다면 multi-class softmax 버전으로 바꾸시면 됩니다.
+            int N = output.getRow();
+            double loss = 0.0;
+            for (int i = 0; i < N; ++i) {
+                double z = output(i, 0);
+                double y = target(i, 0);
+                // sigmoid로 확률 p 계산
+                double p = 1.0 / (1.0 + std::exp(-z));
+                // log(0) 방지용 클리핑
+                p = std::min(std::max(p, 1e-7), 1.0 - 1e-7);
+                loss += -(y * std::log(p) + (1.0 - y) * std::log(1.0 - p));
+            }
+            return loss;
+        }
+
+        default:
+            throw std::runtime_error("Unsupported LossType in getLoss");
     }
 }
 
@@ -178,22 +184,38 @@ double LossLayer::getLoss(){
 // MSE: dL/dz = 2(y-p)
 // CrossEntropy: dL/dz = softmax(p) - y
 d_matrix<double> LossLayer::getGrad() {
-    switch (Loss){
-    case LossType::MSE: {
-        d_matrix<double> diff = matrixPlus(output, ScalaProduct(target, -1.0));
-        return ScalaProduct(diff, 2.0);
-    }
+    // 1) 디바이스→호스트 복사
+    output.cpyToHost();
+    target.cpyToHost();
 
-    case LossType::CrossEntropy: {
-        d_matrix<double> prob = softmax(output);
-        return matrixPlus(prob, ScalaProduct(target, -1.0));
-    }
+    switch (Loss) {
+        case LossType::MSE: {
+            // L = (1/N) Σ (o - t)^2  이므로  dL/dz = 2*(o - t)/N
+            int N = output.getRow();
+            // diff = output - target
+            d_matrix<double> diff = matrixPlus(output, ScalaProduct(target, -1.0));
+            return ScalaProduct(diff, 2.0 / static_cast<double>(N));
+        }
 
-    default:
-        throw std::runtime_error("Unsupported LossType in getGrad");
+        case LossType::CrossEntropy: {
+            // 이진 크로스엔트로피 (BCE) + Sigmoid 로 구현
+            int N = output.getRow();
+            d_matrix<double> grad(N, 1);
+            for (int i = 0; i < N; ++i) {
+                double z = output(i, 0);
+                double y = target(i, 0);
+                // Sigmoid 확률
+                double p = 1.0 / (1.0 + std::exp(-z));
+                // gradient = p - y
+                grad(i, 0) = p - y;
+            }
+            return grad;
+        }
+
+        default:
+            throw std::runtime_error("Unsupported LossType in getGrad");
     }
 }
-
 Adam::~Adam(){}
 
 // Adam 옵티마이저 역전파
@@ -202,34 +224,54 @@ Adam::~Adam(){}
 // m = β₁ m + (1-β₁)g, v = β₂ v + (1-β₂)g²
 // m̂ = m/(1-β₁ᵗ), v̂ = v/(1-β₂ᵗ)
 // W -= lr * m̂/(sqrt(v̂)+ε)
-void Adam::backprop(perceptronLayer* next, const d_matrix<double>& external_delta, const d_matrix<double>& act_deriv)
-{
+void Adam::backprop(perceptronLayer* next, const d_matrix<double>& external_delta, const d_matrix<double>& act_deriv){
+
+    this->t++;
+
+    // 1) gradient 계산
     this->calculateGrad(next, external_delta, act_deriv);
-    m_W = matrixPlus(ScalaProduct(m_W, beta1), ScalaProduct(this->Gt_W, 1.0 - beta1));
-    v_W = matrixPlus(ScalaProduct(v_W, beta2), ScalaProduct(HadamardProduct(this->Gt_W, this->Gt_W), 1.0 - beta2));
-    m_B = matrixPlus(ScalaProduct(m_B, beta1), ScalaProduct(this->Gt_B, 1.0 - beta1));
-    v_B = matrixPlus(ScalaProduct(v_B, beta2), ScalaProduct(HadamardProduct(this->Gt_B, this->Gt_B), 1.0 - beta2));
-    double beta1t = 1.0 - std::pow(beta1, t);
-    double beta2t = 1.0 - std::pow(beta2, t);
-    d_matrix<double> m_W_hat = ScalaProduct(m_W, 1.0 / beta1t);
-    d_matrix<double> v_W_hat = ScalaProduct(v_W, 1.0 / beta2t);
-    d_matrix<double> m_B_hat = ScalaProduct(m_B, 1.0 / beta1t);
-    d_matrix<double> v_B_hat = ScalaProduct(v_B, 1.0 / beta2t);
-    m_W_hat.cpyToDev();
-    v_W_hat.cpyToDev();
-    m_B_hat.cpyToDev();
-    v_B_hat.cpyToDev();
+
+    // 2) 1차 및 2차 모멘트 갱신
+    this->m_W = matrixPlus(ScalaProduct(this->m_W, this->beta1), ScalaProduct(this->Gt_W, 1.0 - this->beta1));
+    this->v_W = matrixPlus(ScalaProduct(this->v_W, this->beta2), ScalaProduct(HadamardProduct(this->Gt_W, this->Gt_W), 1.0 - this->beta2));
+    this->m_B = matrixPlus(ScalaProduct(this->m_B, this->beta1), ScalaProduct(this->Gt_B, 1.0 - this->beta1));
+    this->v_B = matrixPlus(ScalaProduct(this->v_B, this->beta2), ScalaProduct(HadamardProduct(this->Gt_B, this->Gt_B), 1.0 - this->beta2));
+
+    // 3) 편향 보정 계수
+    double bias_corr1 = 1.0 - std::pow(this->beta1, this->t);
+    double bias_corr2 = 1.0 - std::pow(this->beta2, this->t);
+
+    // 4) 편향 보정된 모멘트
+    d_matrix<double> m_W_hat = ScalaProduct(this->m_W, 1.0 / bias_corr1);
+    d_matrix<double> v_W_hat = ScalaProduct(this->v_W, 1.0 / bias_corr2);
+    d_matrix<double> m_B_hat = ScalaProduct(this->m_B, 1.0 / bias_corr1);
+    d_matrix<double> v_B_hat = ScalaProduct(this->v_B, 1.0 / bias_corr2);
+
+    // 5) 분모: sqrt(v̂) + ε
+    //    MatrixActivate<sqrt> 는 elementwise sqrt, devide 는 reciprocal
+    auto sqrt_vW = MatrixActivate<double, sqr>(v_W_hat);
+    auto denomW  = ScalaPlus(sqrt_vW, this->epsilon);
+    auto invDenW = MatrixActivate<double, devide>(denomW);
+
+    auto sqrt_vB = MatrixActivate<double, sqr>(v_B_hat);
+    auto denomB  = ScalaPlus(sqrt_vB, this->epsilon);
+    auto invDenB = MatrixActivate<double, devide>(denomB);
+
+    // 6) 파라미터 업데이트
+    //    w ← w − lr * (m̂ ⊙ invDen)
     this->weight = matrixPlus(
         this->weight,
-        ScalaProduct(HadamardProduct(m_W_hat, MatrixActivate<double, devide>(ScalaPlus(MatrixActivate<double, sqr>(v_W_hat), epsilon))), (-1)*this->learning_rate)
+        ScalaProduct(HadamardProduct(m_W_hat, invDenW), -this->learning_rate)
     );
     this->bias = matrixPlus(
         this->bias,
-        ScalaProduct(HadamardProduct(m_B_hat, MatrixActivate<double, devide>(ScalaPlus(MatrixActivate<double, sqr>(v_B_hat), epsilon))), (-1)*this->learning_rate)
+        ScalaProduct(HadamardProduct(m_B_hat, invDenB), -this->learning_rate)
     );
+
+    // 7) 디바이스 메모리에 복사
     this->updateWeightInDev();
     cudaDeviceSynchronize();
-    t++;
+
 }
 
 SGD::~SGD(){}

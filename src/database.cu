@@ -12,7 +12,6 @@ const int BOARDHEIGHT = 100;
 const int WIDTH = 10;
 const int HEIGHT = 10;
 
-
 // CUDA kernel 그대로 활용 (width, height 파라미터 수정)
 __global__ void nextGenKernel(int* current, int* next, int width, int height) {
     int i = blockIdx.y * blockDim.y + threadIdx.y;
@@ -302,7 +301,7 @@ void generateGameOfLifeData(int filenum, double ratio) {
 
 std::vector<std::pair<d_matrix<double>, d_matrix<double>>> LoadingData() {
     std::vector<std::pair<d_matrix<double>, d_matrix<double>>> dataset;
-    dataset.reserve(1000); // 예상 수만큼 미리 공간 확보
+    dataset.reserve(1000);
 
     for (const auto& entry : fs::directory_iterator(DATASET_PATH)) {
         if (entry.path().extension() != ".txt") continue;
@@ -313,31 +312,32 @@ std::vector<std::pair<d_matrix<double>, d_matrix<double>>> LoadingData() {
             continue;
         }
 
-        d_matrix<double> input(WIDTH*HEIGHT, 1);  // 10x10 입력
+        d_matrix<double> input(WIDTH*HEIGHT, 1);
         std::string line;
         int row = 0;
-
         while (row < WIDTH && std::getline(fin, line)) {
             int len = std::min(HEIGHT, static_cast<int>(line.size()));
-            for (int col = 0; col < len; ++col) {
+            for (int col = 0; col < len; ++col)
                 input(row * HEIGHT + col, 0) = line[col] - '0';
-            }
             row++;
         }
 
         int label_index = -1;
-        if (std::getline(fin, line)) {
+        if (std::getline(fin, line))
             label_index = std::stoi(line);
-        }
 
-        d_matrix<double> label(4, 1);
-        for(int k=0; k<4; ++k){
-            label(k,0) = label_index % 10;
-            label_index /= 10;
+        // --- 이 부분이 바뀌었습니다 ---
+        d_matrix<double> label(BIT_WIDTH, 1);
+        // 1) 모두 0으로 초기화
+        label.fill(0.0);
+        // 2) 각 비트 위치에 0/1 설정 (LSB부터)
+        for (int b = 0; b < BIT_WIDTH; ++b) {
+            label(b, 0) = (label_index >> b) & 1;
         }
-        label.cpyToDev();
+        // --------------------------------
+
         input.cpyToDev();
-        
+        label.cpyToDev();
         dataset.emplace_back(input, label);
     }
 

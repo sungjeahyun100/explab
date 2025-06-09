@@ -17,16 +17,16 @@ int main(){
     const char *cmd = "find ../dataset/result -type f -delete";
     std::system(cmd);
 
-    Adam layer1(100, 128, 0.01, InitType::Xavier);
-    ActivateLayer act1(128, 1, ActivationType::Tanh);
-    Adam layer2(128, 64, 0.01, InitType::Xavier);
-    ActivateLayer act2(64, 1, ActivationType::Tanh);
-    Adam outputLayer(64, 4, 0.01, InitType::Xavier);
-    ActivateLayer outAct(4, 1, ActivationType::Tanh);
-    LossLayer loss(4, 1, LossType::CrossEntropy);
+    Adam layer1(100, 128, 0.0005, InitType::He);
+    ActivateLayer act1(128, 1, ActivationType::LReLU);
+    Adam layer2(128, 64, 0.0005, InitType::He);
+    ActivateLayer act2(64, 1, ActivationType::LReLU);
+    Adam outputLayer(64, BIT_WIDTH, 0.0005, InitType::He);
+    ActivateLayer outAct(BIT_WIDTH, 1, ActivationType::LReLU);
+    LossLayer loss(BIT_WIDTH, 1, LossType::MSE);
 
-    const int epochs = 20;
-    const int batchSize = 10;
+    const int epochs = 400;
+    const int batchSize = 50;
 
     for(int epoch=0; epoch<epochs; ++epoch){
         auto startTime = std::chrono::steady_clock::now();
@@ -77,29 +77,40 @@ int main(){
 
     for(size_t idx=0; idx<dataset.size(); ++idx){
         auto &inputMat = dataset[idx].first;
-
+    
+        // 순전파
         layer1.feedforward(inputMat);
-        act1.pushInput(layer1.getOutput());
+        act1.pushInput(layer1.getOutput()); 
         act1.Active();
         layer2.feedforward(act1.getOutput());
-        act2.pushInput(layer2.getOutput());
+        act2.pushInput(layer2.getOutput()); 
         act2.Active();
         outputLayer.feedforward(act2.getOutput());
-        outAct.pushInput(outputLayer.getOutput());
+        outAct.pushInput(outputLayer.getOutput()); 
         outAct.Active();
-
+    
+        // 예측값 복사
         d_matrix<double> pred = outAct.getOutput();
         pred.cpyToHost();
+    
+        // 비트 예측 및 정수값 복원
         int count = 0;
-        for(int k=0; k<4; ++k){
-            count += static_cast<int>(std::round(pred(k,0))) * static_cast<int>(std::pow(10,k));
+        for(int b = 0; b < BIT_WIDTH; ++b){
+            // sigmoid 출력이니 0.5 기준으로 0/1 결정
+            int bit = (pred(b,0) > 0.5) ? 1 : 0;
+            count |= (bit << b);  // 2^b 만큼 더하기
         }
-
-        std::ofstream ofs(result_path + "/sample_count_ver_" + std::to_string(idx+1) + ".txt");
-        ofs << "=== sample " << idx+1 << " 결과 ===\n";
+    
+        // 결과 저장
+        std::ofstream ofs(result_path + "/sample_count_bin_" + std::to_string(idx+1) + ".txt");
+        if(!ofs){
+            std::cerr << "파일 열기 실패: sample " << (idx+1) << "\n";
+            continue;
+        }
+        ofs << "=== sample " << (idx+1) << " 결과 ===\n";
         ofs << count << "\n";
         ofs.close();
     }
-
+    
     return 0;
 }
