@@ -85,9 +85,9 @@ d_matrix<T> ScalaProduct(const d_matrix<T>& d_A, T scalar) {
     dim3 gridSize((row + blockSize.x - 1) / blockSize.x, (col + blockSize.y - 1) / blockSize.y);
 
     ScalaKernel<<<gridSize, blockSize>>>(d_A.getDevPointer(), scalar, C.getDevPointer(), row, col);
-    C.cpyToHost();
     cudaDeviceSynchronize();
 
+    C.cpyToHost();
     return C;
 }
 
@@ -308,6 +308,7 @@ d_matrix<double> castToDoubleGPU(const d_matrix<T>& input) {
 
     castKernel<<<numBlocks, blockSize>>>(d_src, d_dst, size);
     cudaDeviceSynchronize();
+    output.cpyToHost();
 
     return output;
 }

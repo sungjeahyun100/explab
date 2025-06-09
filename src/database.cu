@@ -336,9 +336,8 @@ std::vector<std::pair<d_matrix<double>, d_matrix<double>>> LoadingData() {
             label_index /= 10;
         }
         label.cpyToDev();
-
         input.cpyToDev();
-        label.cpyToDev();
+        
         dataset.emplace_back(input, label);
     }
 
