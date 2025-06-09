@@ -330,9 +330,12 @@ std::vector<std::pair<d_matrix<double>, d_matrix<double>>> LoadingData() {
             label_index = std::stoi(line);
         }
 
-        d_matrix<double> label(1, 1); // 원-핫 벡터 초기화
-
-        label(0, 0) = label_index;
+        d_matrix<double> label(4, 1);
+        for(int k=0; k<4; ++k){
+            label(k,0) = label_index % 10;
+            label_index /= 10;
+        }
+        label.cpyToDev();
 
         dataset.emplace_back(input, label);
     }

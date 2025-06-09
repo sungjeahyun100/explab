@@ -21,9 +21,9 @@ int main(){
     ActivateLayer act1(128, 1, ActivationType::Tanh);
     Adam layer2(128, 64, 0.01, InitType::Xavier);
     ActivateLayer act2(64, 1, ActivationType::Tanh);
-    Adam outputLayer(64, 1, 0.01, InitType::Xavier);
-    ActivateLayer outAct(1, 1, ActivationType::Identity);
-    LossLayer loss(1, 1, LossType::MSE);
+    Adam outputLayer(64, 4, 0.01, InitType::Xavier);
+    ActivateLayer outAct(4, 1, ActivationType::Identity);
+    LossLayer loss(4, 1, LossType::MSE);
 
     const int epochs = 20;
     const int batchSize = 10;
@@ -86,7 +86,10 @@ int main(){
 
         d_matrix<double> pred = outAct.getOutput();
         pred.cpyToHost();
-        int count = static_cast<int>(std::round(pred(0,0)));
+        int count = 0;
+        for(int k=0; k<4; ++k){
+            count += static_cast<int>(std::round(pred(k,0))) * static_cast<int>(std::pow(10,k));
+        }
 
         std::ofstream ofs(result_path + "/sample_count_ver_" + std::to_string(idx+1) + ".txt");
         ofs << "=== sample " << idx+1 << " 결과 ===\n";
