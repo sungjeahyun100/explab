@@ -27,11 +27,9 @@ int main(){
 
     const int epochs = 20;
     const int batchSize = 10;
-    std::mt19937 rng(std::random_device{}());
 
     for(int epoch=0; epoch<epochs; ++epoch){
         auto startTime = std::chrono::steady_clock::now();
-        std::shuffle(dataset.begin(), dataset.end(), rng);
 
         for(size_t i=0; i<dataset.size(); i+=batchSize){
             size_t end = std::min(i+batchSize, dataset.size());

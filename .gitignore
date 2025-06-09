@@ -2,3 +2,4 @@ build/
 *.o
 codex_exp
 .DS_Store
+dataset/
