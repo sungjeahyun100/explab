@@ -95,6 +95,8 @@ void ActivateLayer::Active(){
             output = MatrixActivate<double, Identity>(input); break;
         case ActivationType::Sigmoid:
             output = MatrixActivate<double, sigmoid>(input); break;
+        case ActivationType::Tanh:
+            output = MatrixActivate<double, Tanh>(input); break;
         default:
             throw std::runtime_error("Unsupported ActivationType in perceptronLayer");
     }
@@ -115,6 +117,8 @@ d_matrix<double> ActivateLayer::d_Active(const d_matrix<double>& z) {
             return MatrixActivate<double, d_I>(z);
         case ActivationType::Sigmoid:
             return MatrixActivate<double, d_sigmoid>(z);
+        case ActivationType::Tanh:
+            return MatrixActivate<double, d_tanh>(z);
         default:
             throw std::runtime_error("Unsupported ActivationType in d_Active");
     }

@@ -2,6 +2,6 @@
 
 
 int main(){
-    generateGameOfLifeData(200, 0.4);
+    generateGameOfLifeData(SEMPLE, 0.4);
     return 0;
 }

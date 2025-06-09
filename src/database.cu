@@ -7,8 +7,8 @@ namespace fs = std::filesystem;
 
 const std::string DATASET_PATH = "../dataset/";
 
-const int BOARDWIDTH = 300;
-const int BOARDHEIGHT = 300;
+const int BOARDWIDTH = 100;
+const int BOARDHEIGHT = 100;
 const int WIDTH = 10;
 const int HEIGHT = 10;
 

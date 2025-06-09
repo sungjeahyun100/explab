@@ -17,6 +17,7 @@ const std::string WEIGHT_DATAPATH = "/home/sjh100/explab/test_subject/";
 enum class ActivationType {
     ReLU,
     LReLU,
+    Tanh,
     Identity,
     Sigmoid
 };

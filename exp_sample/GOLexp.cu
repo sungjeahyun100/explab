@@ -1,6 +1,8 @@
 #include <database.hpp>
 #include <perceptron.hpp>
 
+
+
 const std::string path = "../dataset/result";
 
 // 데이터셋 로드 함수: dataset/sampleN.txt 파일에서
@@ -46,16 +48,17 @@ std::vector<std::pair<d_matrix<double>, d_matrix<double>>> loadPatternData(int c
 }
 
 int main(){
-    Adam inputlayer(100, 256, 0.011, InitType::He);
-    ActivateLayer input(256, 1, ActivationType::LReLU);
-    Adam hiddenlayer1(256, 512, 0.011, InitType::He);
-    ActivateLayer hidden1(512, 1, ActivationType::LReLU);
-    Adam outputlayer(512, BOARDHEIGHT*BOARDWIDTH, 0.011, InitType::He);
-    ActivateLayer output(BOARDHEIGHT*BOARDWIDTH, 1, ActivationType::LReLU);
-    LossLayer loss(BOARDHEIGHT*BOARDWIDTH, 1, LossType::MSE);
+    Adam inputlayer(100, 256, 0.011, InitType::Xavier);
+    ActivateLayer input(256, 1, ActivationType::Tanh);
+    Adam hiddenlayer1(256, 512, 0.011, InitType::Xavier);
+    ActivateLayer hidden1(512, 1, ActivationType::Tanh);
+    Adam hiddenlayer2(512, 512, 0.011, InitType::Xavier);
+    ActivateLayer hidden2(512, 1, ActivationType::Tanh);
+    Adam outputlayer(512, BOARDHEIGHT*BOARDWIDTH, 0.011, InitType::Xavier);
+    ActivateLayer output(BOARDHEIGHT*BOARDWIDTH, 1, ActivationType::Tanh);
+    LossLayer loss(BOARDHEIGHT*BOARDWIDTH, 1, LossType::CrossEntropy);
 
-    // 데이터셋 로드 (sample1 ~ sample40)
-    auto dataset = loadPatternData(40);
+    auto dataset = loadPatternData(SEMPLE);
 
     std::filesystem::create_directories(path);
 
@@ -63,7 +66,7 @@ int main(){
 
     std::system(commend1);
 
-    const int epochs = 5;           // 에폭 수 (예시)
+    const int epochs = 20;           // 에폭 수 (예시)
     const int batchSize = 10;       // 미니배치 크기
 
     std::mt19937 rng(std::random_device{}());
@@ -88,23 +91,27 @@ int main(){
                 hidden1.pushInput(hiddenlayer1.getOutput());
                 hidden1.Active();
 
-                outputlayer.feedforward(hidden1.getOutput());
+                hiddenlayer2.feedforward(hiddenlayer1.getOutput());
+                hidden2.pushInput(hiddenlayer2.getOutput());
+                hidden2.Active();
+
+                outputlayer.feedforward(hidden2.getOutput());
                 output.pushInput(outputlayer.getOutput());
                 output.Active();
 
                 // 손실 계산 및 역전파
                 loss.pushTarget(targetMat);
                 loss.pushOutput(output.getOutput());
-                d_matrix<double> grad = loss.getGrad();
 
-                outputlayer.backprop(nullptr, grad, output.d_Active(outputlayer.getOutput()));
+                outputlayer.backprop(nullptr, loss.getGrad(), output.d_Active(outputlayer.getOutput()));
                 // 다음 계층 정보를 포인터로 전달하면 내부에서 next->delta를 활용하여
                 // 역전파가 진행된다. 외부에서 delta에 접근할 필요는 없다.
                 d_matrix<double> dummy(1,1); // 사용되지 않음
-                hiddenlayer1.backprop(&outputlayer, dummy, hidden1.d_Active(hiddenlayer1.getOutput()));
+                hiddenlayer2.backprop(&outputlayer, dummy, hidden2.d_Active(hiddenlayer2.getOutput()));
+                hiddenlayer1.backprop(&hiddenlayer2, dummy, hidden1.d_Active(hiddenlayer1.getOutput()));
                 inputlayer.backprop(&hiddenlayer1, dummy, input.d_Active(inputlayer.getOutput()));
 
-                printProgressBar(j, dataset.size(), startTime, "Epoch" + std::to_string(epoch+1) + "진행중...");
+                printProgressBar(j, dataset.size(), startTime, "Epoch" + std::to_string(epoch+1) + "진행중..." + "(loss:" + std::to_string(loss.getLoss()) + ")");
             }
         }
         std::cout << "✅ Epoch " << (epoch+1)
@@ -112,7 +119,7 @@ int main(){
                   << std::chrono::duration_cast<std::chrono::seconds>(
                          std::chrono::steady_clock::now() - startTime
                      ).count()
-                  << "초)                                                                                     "
+                  << "초),                                                                                                                                       "//---
                   << std::endl;
     }
 
@@ -125,7 +132,10 @@ int main(){
         hiddenlayer1.feedforward(input.getOutput());
         hidden1.pushInput(hiddenlayer1.getOutput());
         hidden1.Active();
-        outputlayer.feedforward(hidden1.getOutput());
+        hiddenlayer2.feedforward(hiddenlayer1.getOutput());
+        hidden2.pushInput(hiddenlayer2.getOutput());
+        hidden2.Active();
+        outputlayer.feedforward(hidden2.getOutput());
         output.pushInput(outputlayer.getOutput());
         output.Active();
 
@@ -137,7 +147,7 @@ int main(){
         result << "=== sample " << idx+1 << " 결과 ===" << std::endl;
         for(int r=0;r<BOARDHEIGHT;r++){
             for(int c=0;c<BOARDWIDTH;c++){
-                result << (pred(r*BOARDWIDTH+c,0) > 0.5 ? '1' : '0');
+                result << (pred(r*BOARDWIDTH+c,0) > 0.1 ? '1' : '0');
             }
             result << '\n';
         }
