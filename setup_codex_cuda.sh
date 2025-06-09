@@ -29,6 +29,7 @@ nvcc -std=c++20 \
     "$PROJECT_ROOT/src/database.cu" \
     -o "$BUILD_DIR/genGOLdata" \
     -lcurl \
+    -lcurand \
     -Xcompiler="-pthread"
 
 echo "✅ build/genGOLdata 빌드 완료"

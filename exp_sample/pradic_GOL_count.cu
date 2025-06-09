@@ -67,7 +67,10 @@ int main(){
                   << std::chrono::duration_cast<std::chrono::seconds>(
                          std::chrono::steady_clock::now() - startTime
                      ).count()
-                  << "초),                                                                                                                                       "//---
+                  << "초),"
+                  << "loss:"
+                  << loss.getLoss()
+                  << "                                                                                                                                          "
                   << std::endl;
     }
 
