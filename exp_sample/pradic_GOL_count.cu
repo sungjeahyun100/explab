@@ -22,8 +22,8 @@ int main(){
     Adam layer2(128, 64, 0.01, InitType::Xavier);
     ActivateLayer act2(64, 1, ActivationType::Tanh);
     Adam outputLayer(64, 4, 0.01, InitType::Xavier);
-    ActivateLayer outAct(4, 1, ActivationType::Identity);
-    LossLayer loss(4, 1, LossType::MSE);
+    ActivateLayer outAct(4, 1, ActivationType::Tanh);
+    LossLayer loss(4, 1, LossType::CrossEntropy);
 
     const int epochs = 20;
     const int batchSize = 10;
@@ -52,12 +52,15 @@ int main(){
                 loss.pushTarget(targetMat);
                 loss.pushOutput(outAct.getOutput());
 
-                outputLayer.backprop(nullptr, loss.getGrad(), outAct.d_Active(outputLayer.getOutput()));
+                auto Grad = loss.getGrad();
+                auto Loss = loss.getLoss();
+
+                outputLayer.backprop(nullptr, Grad, outAct.d_Active(outputLayer.getOutput()));
                 d_matrix<double> dummy(1,1);
                 layer2.backprop(&outputLayer, dummy, act2.d_Active(layer2.getOutput()));
                 layer1.backprop(&layer2, dummy, act1.d_Active(layer1.getOutput()));
 
-                printProgressBar(j, dataset.size(), startTime, "Epoch" + std::to_string(epoch+1) + " 진행중...(loss:" + std::to_string(loss.getLoss()) + ")");
+                printProgressBar(j, dataset.size(), startTime, "Epoch" + std::to_string(epoch+1) + " 진행중...(loss:" + std::to_string(Loss) + ")");
             }
         }
         std::cout << "✅ Epoch " << (epoch+1)
