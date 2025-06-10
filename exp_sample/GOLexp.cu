@@ -76,6 +76,9 @@ int main(){
         auto startTime = std::chrono::steady_clock::now();
         std::shuffle(dataset.begin(), dataset.end(), rng);
 
+                double totalLoss = 0.0;
+                size_t sampleCount = 0;
+
         for(size_t i=0; i<dataset.size(); i += batchSize){
             size_t end = std::min(i+batchSize, dataset.size());
             for(size_t j=i; j<end; ++j){
@@ -103,6 +106,9 @@ int main(){
                 loss.pushTarget(targetMat);
                 loss.pushOutput(output.getOutput());
 
+                totalLoss += loss.getLoss();
+                ++sampleCount;
+
                 outputlayer.backprop(nullptr, loss.getGrad(), output.d_Active(outputlayer.getOutput()));
                 // 다음 계층 정보를 포인터로 전달하면 내부에서 next->delta를 활용하여
                 // 역전파가 진행된다. 외부에서 delta에 접근할 필요는 없다.
@@ -114,12 +120,18 @@ int main(){
                 printProgressBar(j, dataset.size(), startTime, "Epoch" + std::to_string(epoch+1) + "진행중..." + "(loss:" + std::to_string(loss.getLoss()) + ")");
             }
         }
+
+        double avgLoss = totalLoss / static_cast<double>(sampleCount);
+
         std::cout << "✅ Epoch " << (epoch+1)
                   << " 완료! (소요 "
                   << std::chrono::duration_cast<std::chrono::seconds>(
                          std::chrono::steady_clock::now() - startTime
                      ).count()
-                  << "초),                                                                                                                                       "//---
+                  << "초),"
+                  << "loss:"
+                  << avgLoss
+                  << "                                                                                                                                          "
                   << std::endl;
     }
 

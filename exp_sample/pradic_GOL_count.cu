@@ -17,63 +17,76 @@ int main(){
     const char *cmd = "find ../dataset/result -type f -delete";
     std::system(cmd);
 
-    Adam layer1(100, 128, 0.0005, InitType::He);
+    Adam layer1(100, 128, 0.0001, InitType::He);
     ActivateLayer act1(128, 1, ActivationType::LReLU);
-    Adam layer2(128, 64, 0.0005, InitType::He);
+    Adam layer2(128, 64, 0.0001, InitType::He);
     ActivateLayer act2(64, 1, ActivationType::LReLU);
-    Adam outputLayer(64, BIT_WIDTH, 0.0005, InitType::He);
+    Adam outputLayer(64, BIT_WIDTH, 0.0001, InitType::He);
     ActivateLayer outAct(BIT_WIDTH, 1, ActivationType::LReLU);
     LossLayer loss(BIT_WIDTH, 1, LossType::MSE);
 
-    const int epochs = 400;
+    const int epochs = 1000;
     const int batchSize = 50;
-
-    for(int epoch=0; epoch<epochs; ++epoch){
+    std::mt19937 rng(std::random_device{}());
+    
+    for(int epoch = 0; epoch < epochs; ++epoch){
         auto startTime = std::chrono::steady_clock::now();
-
-        for(size_t i=0; i<dataset.size(); i+=batchSize){
-            size_t end = std::min(i+batchSize, dataset.size());
-            for(size_t j=i; j<end; ++j){
-                auto &inputMat = dataset[j].first;
+    
+        // 1) 에폭 시작 시 한 번만 shuffle
+        std::shuffle(dataset.begin(), dataset.end(), rng);
+    
+        double totalLoss = 0.0;
+        size_t sampleCount = 0;
+    
+        // 2) 배치별 학습
+        for(size_t i = 0; i < dataset.size(); i += batchSize){
+            size_t end = std::min(i + batchSize, dataset.size());
+    
+            for(size_t j = i; j < end; ++j){
+                auto &inputMat  = dataset[j].first;
                 auto &targetMat = dataset[j].second;
-
+    
+                // (b) 순전파
                 layer1.feedforward(inputMat);
-                act1.pushInput(layer1.getOutput());
-                act1.Active();
-
+                act1.pushInput(layer1.getOutput()); act1.Active();
                 layer2.feedforward(act1.getOutput());
-                act2.pushInput(layer2.getOutput());
-                act2.Active();
-
+                act2.pushInput(layer2.getOutput()); act2.Active();
                 outputLayer.feedforward(act2.getOutput());
-                outAct.pushInput(outputLayer.getOutput());
-                outAct.Active();
-
+                outAct.pushInput(outputLayer.getOutput()); outAct.Active();
+    
+                // (c) 손실 계산
                 loss.pushTarget(targetMat);
                 loss.pushOutput(outAct.getOutput());
-
+                double L = loss.getLoss();
+                totalLoss += L;
+                ++sampleCount;
+    
+                // (d) 역전파
                 auto Grad = loss.getGrad();
-                auto Loss = loss.getLoss();
-
                 outputLayer.backprop(nullptr, Grad, outAct.d_Active(outputLayer.getOutput()));
                 d_matrix<double> dummy(1,1);
                 layer2.backprop(&outputLayer, dummy, act2.d_Active(layer2.getOutput()));
                 layer1.backprop(&layer2, dummy, act1.d_Active(layer1.getOutput()));
-
-                printProgressBar(j, dataset.size(), startTime, "Epoch" + std::to_string(epoch+1) + " 진행중...(loss:" + std::to_string(Loss) + ")");
+    
+                // (e) 진행 표시
+                printProgressBar(j, dataset.size(), startTime, "Epoch " + std::to_string(epoch+1) + " 진행중...(loss:" + std::to_string(L) + ")");
             }
         }
+    
+        // 3) 에폭 단위 평균 손실 계산
+        double avgLoss = totalLoss / static_cast<double>(sampleCount);
+    
         std::cout << "✅ Epoch " << (epoch+1)
                   << " 완료! (소요 "
                   << std::chrono::duration_cast<std::chrono::seconds>(
                          std::chrono::steady_clock::now() - startTime
                      ).count()
-                  << "초),"
-                  << "loss:"
-                  << loss.getLoss()
+                  << "초), 평균 손실: "
+                  << avgLoss
                   << "                                                                                                                                          "
                   << std::endl;
     }
+
 
     for(size_t idx=0; idx<dataset.size(); ++idx){
         auto &inputMat = dataset[idx].first;

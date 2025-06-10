@@ -43,7 +43,7 @@
 #include <thrust/copy.h>
 #include <thrust/execution_policy.h>
 
-#define SEMPLE 300
+#define SEMPLE 1000
 
 extern const int BOARDWIDTH;
 extern const int BOARDHEIGHT;
