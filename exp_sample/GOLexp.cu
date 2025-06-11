@@ -66,18 +66,18 @@ int main(){
 
     std::system(commend1);
 
-    const int epochs = 20;           // 에폭 수 (예시)
+    const int epochs = 1000;           // 에폭 수 (예시)
     const int batchSize = 10;       // 미니배치 크기
 
     std::mt19937 rng(std::random_device{}());
 
     // 학습 루프
     for(int epoch=0; epoch<epochs; ++epoch){
+
         auto startTime = std::chrono::steady_clock::now();
         std::shuffle(dataset.begin(), dataset.end(), rng);
-
-                double totalLoss = 0.0;
-                size_t sampleCount = 0;
+        double totalLoss = 0.0;
+        size_t sampleCount = 0;
 
         for(size_t i=0; i<dataset.size(); i += batchSize){
             size_t end = std::min(i+batchSize, dataset.size());

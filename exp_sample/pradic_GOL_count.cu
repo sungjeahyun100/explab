@@ -26,7 +26,7 @@ int main(){
     LossLayer loss(BIT_WIDTH, 1, LossType::MSE);
 
     const int epochs = 1000;
-    const int batchSize = 50;
+    const int batchSize = 10;
     std::mt19937 rng(std::random_device{}());
     
     for(int epoch = 0; epoch < epochs; ++epoch){
