@@ -27,7 +27,7 @@ int main(){
     ActivateLayer outAct(BIT_WIDTH, 1, ActivationType::Sigmoid);
     LossLayer loss(BIT_WIDTH, 1, LossType::CrossEntropy);
 
-    const int epochs = 10;
+    const int epochs = 100;
     const int batchSize = 10;
     std::mt19937 rng(std::random_device{}());
     
