@@ -9,26 +9,31 @@
 #include <cmath>
 
 const std::string result_path = "../dataset/result";
+const std::string graph_path = "../graph/count_ver_loss";
 
 int main(){
     auto dataset = LoadingData();
 
     std::filesystem::create_directories(result_path);
+    std::filesystem::create_directories(graph_path); 
     const char *cmd = "find ../dataset/result -type f -delete";
     std::system(cmd);
 
-    Adam inputlayer(100, 512, 0.0001, InitType::Xavier);
-    ActivateLayer inputAct(512, 1, ActivationType::Sigmoid);
-    Adam hiddenlayer1(512, 512, 0.0001, InitType::Xavier);
-    ActivateLayer hiddenAct1(512, 1, ActivationType::Sigmoid);
-    Adam hiddenlayer2(512, 128, 0.0001, InitType::Xavier);
-    ActivateLayer hiddenAct2(128, 1, ActivationType::Sigmoid);
-    Adam outputLayer(128, BIT_WIDTH, 0.0001, InitType::Xavier);
-    ActivateLayer outAct(BIT_WIDTH, 1, ActivationType::Sigmoid);
-    LossLayer loss(BIT_WIDTH, 1, LossType::CrossEntropy);
+    std::ofstream loss_ofs(graph_path + "/loss_data_He_LReLU_MSE_batch50.txt");  // ← 추가
+    loss_ofs << "# epoch loss\n"; 
+
+    Adam inputlayer(100, 512, 0.0001, InitType::He);
+    ActivateLayer inputAct(512, 1, ActivationType::LReLU);
+    Adam hiddenlayer1(512, 512, 0.0001, InitType::He);
+    ActivateLayer hiddenAct1(512, 1, ActivationType::LReLU);
+    Adam hiddenlayer2(512, 128, 0.0001, InitType::He);
+    ActivateLayer hiddenAct2(128, 1, ActivationType::LReLU);
+    Adam outputLayer(128, BIT_WIDTH, 0.0001, InitType::He);
+    ActivateLayer outAct(BIT_WIDTH, 1, ActivationType::LReLU);
+    LossLayer loss(BIT_WIDTH, 1, LossType::MSE);
 
     const int epochs = 100;
-    const int batchSize = 10;
+    const int batchSize = 50;
     std::mt19937 rng(std::random_device{}());
     
     for(int epoch = 0; epoch < epochs; ++epoch){
@@ -80,6 +85,8 @@ int main(){
     
         // 3) 에폭 단위 평균 손실 계산
         double avgLoss = totalLoss / static_cast<double>(sampleCount);
+
+        loss_ofs << (epoch+1) << " " << avgLoss << "\n";
     
         std::cout << "✅ Epoch " << (epoch+1)
                   << " 완료! (소요 "
@@ -91,6 +98,8 @@ int main(){
                   << "                                                                                                                                          "
                   << std::endl;
     }
+
+    loss_ofs.close();
 
 
     for(size_t idx=0; idx<dataset.size(); ++idx){
