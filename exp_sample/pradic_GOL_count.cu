@@ -17,15 +17,17 @@ int main(){
     const char *cmd = "find ../dataset/result -type f -delete";
     std::system(cmd);
 
-    Adam layer1(100, 128, 0.0001, InitType::He);
-    ActivateLayer act1(128, 1, ActivationType::LReLU);
-    Adam layer2(128, 64, 0.0001, InitType::He);
-    ActivateLayer act2(64, 1, ActivationType::LReLU);
-    Adam outputLayer(64, BIT_WIDTH, 0.0001, InitType::He);
-    ActivateLayer outAct(BIT_WIDTH, 1, ActivationType::LReLU);
-    LossLayer loss(BIT_WIDTH, 1, LossType::MSE);
+    Adam inputlayer(100, 512, 0.0001, InitType::Xavier);
+    ActivateLayer inputAct(512, 1, ActivationType::Sigmoid);
+    Adam hiddenlayer1(512, 512, 0.0001, InitType::Xavier);
+    ActivateLayer hiddenAct1(512, 1, ActivationType::Sigmoid);
+    Adam hiddenlayer2(512, 128, 0.0001, InitType::Xavier);
+    ActivateLayer hiddenAct2(128, 1, ActivationType::Sigmoid);
+    Adam outputLayer(128, BIT_WIDTH, 0.0001, InitType::Xavier);
+    ActivateLayer outAct(BIT_WIDTH, 1, ActivationType::Sigmoid);
+    LossLayer loss(BIT_WIDTH, 1, LossType::CrossEntropy);
 
-    const int epochs = 1000;
+    const int epochs = 10;
     const int batchSize = 10;
     std::mt19937 rng(std::random_device{}());
     
@@ -47,11 +49,13 @@ int main(){
                 auto &targetMat = dataset[j].second;
     
                 // (b) 순전파
-                layer1.feedforward(inputMat);
-                act1.pushInput(layer1.getOutput()); act1.Active();
-                layer2.feedforward(act1.getOutput());
-                act2.pushInput(layer2.getOutput()); act2.Active();
-                outputLayer.feedforward(act2.getOutput());
+                inputlayer.feedforward(inputMat);
+                inputAct.pushInput(inputlayer.getOutput()); inputAct.Active();
+                hiddenlayer1.feedforward(inputAct.getOutput());
+                hiddenAct1.pushInput(hiddenlayer1.getOutput()); hiddenAct1.Active();
+                hiddenlayer2.feedforward(hiddenAct1.getOutput());
+                hiddenAct2.pushInput(hiddenlayer2.getOutput()); hiddenAct2.Active();
+                outputLayer.feedforward(hiddenAct2.getOutput());
                 outAct.pushInput(outputLayer.getOutput()); outAct.Active();
     
                 // (c) 손실 계산
@@ -65,11 +69,12 @@ int main(){
                 auto Grad = loss.getGrad();
                 outputLayer.backprop(nullptr, Grad, outAct.d_Active(outputLayer.getOutput()));
                 d_matrix<double> dummy(1,1);
-                layer2.backprop(&outputLayer, dummy, act2.d_Active(layer2.getOutput()));
-                layer1.backprop(&layer2, dummy, act1.d_Active(layer1.getOutput()));
+                hiddenlayer2.backprop(&outputLayer, dummy, hiddenAct2.d_Active(hiddenlayer2.getOutput()));
+                hiddenlayer1.backprop(&hiddenlayer2, dummy, hiddenAct1.d_Active(hiddenlayer1.getOutput()));
+                inputlayer.backprop(&hiddenlayer1, dummy, inputAct.d_Active(inputlayer.getOutput()));
     
                 // (e) 진행 표시
-                printProgressBar(j, dataset.size(), startTime, "Epoch " + std::to_string(epoch+1) + " 진행중...(loss:" + std::to_string(L) + ")");
+                printProgressBar(j, dataset.size(), startTime, "Epoch " + std::to_string(epoch+1) + " 진행중...(loss:" + std::to_string(totalLoss/1000) + ")");
             }
         }
     
@@ -92,15 +97,14 @@ int main(){
         auto &inputMat = dataset[idx].first;
     
         // 순전파
-        layer1.feedforward(inputMat);
-        act1.pushInput(layer1.getOutput()); 
-        act1.Active();
-        layer2.feedforward(act1.getOutput());
-        act2.pushInput(layer2.getOutput()); 
-        act2.Active();
-        outputLayer.feedforward(act2.getOutput());
-        outAct.pushInput(outputLayer.getOutput()); 
-        outAct.Active();
+        inputlayer.feedforward(inputMat);
+        inputAct.pushInput(inputlayer.getOutput()); inputAct.Active();
+        hiddenlayer1.feedforward(inputAct.getOutput());
+        hiddenAct1.pushInput(hiddenlayer1.getOutput()); hiddenAct1.Active();
+        hiddenlayer2.feedforward(hiddenAct1.getOutput());
+        hiddenAct2.pushInput(hiddenlayer2.getOutput()); hiddenAct2.Active();
+        outputLayer.feedforward(hiddenAct2.getOutput());
+        outAct.pushInput(outputLayer.getOutput()); outAct.Active();
     
         // 예측값 복사
         d_matrix<double> pred = outAct.getOutput();
@@ -122,6 +126,7 @@ int main(){
         }
         ofs << "=== sample " << (idx+1) << " 결과 ===\n";
         ofs << count << "\n";
+        ofs << pred(0, 0) << "," << pred(1, 0) << "," << pred(2, 0) << ","<< pred(3, 0) << "," << pred(4, 0) << "," << pred(5, 0) << "," << pred(6, 0) << "," << pred(7, 0) << "," << "\n";
         ofs.close();
     }
     

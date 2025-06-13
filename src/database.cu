@@ -323,10 +323,8 @@ std::vector<std::pair<d_matrix<double>, d_matrix<double>>> LoadingData() {
         }
 
         int label_index = -1;
-        if (std::getline(fin, line))
-            label_index = std::stoi(line);
+        if (std::getline(fin, line)) label_index = std::stoi(line);
 
-        // --- 이 부분이 바뀌었습니다 ---
         d_matrix<double> label(BIT_WIDTH, 1);
         // 1) 모두 0으로 초기화
         label.fill(0.0);
