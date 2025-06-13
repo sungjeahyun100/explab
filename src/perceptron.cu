@@ -159,20 +159,18 @@ double LossLayer::getLoss(){
         }
 
         case LossType::CrossEntropy: {
-            // 이 구현은 “이진 크로스엔트로피” (비트 단위 분류) 예시입니다.
-            // 필요하다면 multi-class softmax 버전으로 바꾸시면 됩니다.
             int N = output.getRow();
+            // 2) 소프트맥스 확률 계산
+            d_matrix<double> p = softmax(output);
+
+            // 3) 크로스엔트로피 손실: L = -1/N Σ y_i * log(p_i)
             double loss = 0.0;
             for (int i = 0; i < N; ++i) {
-                double z = output(i, 0);
-                double y = target(i, 0);
-                // sigmoid로 확률 p 계산
-                double p = 1.0 / (1.0 + std::exp(-z));
-                // log(0) 방지용 클리핑
-                p = std::min(std::max(p, 1e-7), 1.0 - 1e-7);
-                loss += -(y * std::log(p) + (1.0 - y) * std::log(1.0 - p));
+                double yi = target(i, 0);
+                double pi = std::min(std::max(p(i, 0), 1e-12), 1.0);  // 클리핑
+                loss -= yi * std::log(pi);
             }
-            return loss;
+            return loss / static_cast<double>(N);
         }
 
         default:
@@ -198,18 +196,13 @@ d_matrix<double> LossLayer::getGrad() {
         }
 
         case LossType::CrossEntropy: {
-            // 이진 크로스엔트로피 (BCE) + Sigmoid 로 구현
             int N = output.getRow();
-            d_matrix<double> grad(N, 1);
-            for (int i = 0; i < N; ++i) {
-                double z = output(i, 0);
-                double y = target(i, 0);
-                // Sigmoid 확률
-                double p = 1.0 / (1.0 + std::exp(-z));
-                // gradient = p - y
-                grad(i, 0) = p - y;
-            }
-            return grad;
+            // 2) 소프트맥스 확률 계산
+            d_matrix<double> p = softmax(output);
+
+            // 3) gradient = (p - y) / N
+            d_matrix<double> grad = matrixPlus(p, ScalaProduct(target, -1.0));
+            return ScalaProduct(grad, 1.0 / static_cast<double>(N));
         }
 
         default:
