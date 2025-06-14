@@ -170,6 +170,55 @@ __device__ T d_lrelu(T x){
     return x > 0 ? 1 : 0.01;
 }
 
+const double alpha = 1.6732632423543772848170429916717l;
+const double lamda = 1.0507009873554804934193349852946l;
+
+template<typename T>
+__device__ T ELU(T x){
+    return x > 0 ? x : alpha*(exp(x) - 1);
+}
+
+template<typename T>
+__device__ T d_ELU(T x){
+    return x > 0 ? 1 : alpha*exp(x);
+}
+
+template<typename T>
+__device__ T SELU(T x){
+    return x > 0 ? lamda*x : alpha*lamda*(exp(x) - 1);
+}
+
+template<typename T>
+__device__ T d_SELU(T x){
+    return x > 0 ? lamda : alpha*lamda*exp(x);
+}
+
+template <typename T>
+__device__ T Softplus(T x)
+{
+    if (x > T(0)) {
+        // x + log(1 + e^(−x)) 형태로 쓰면 exp(−x)가 overflow 안 남
+        return x + log1p(exp(-x));
+    } else {
+        // log(1 + e^x) 형태로 쓰면 exp(x)가 overflow할 때
+        // log1p(exp(x)) => x + tiny 안정적으로 처리
+        return log1p(exp(x));
+    }
+}
+
+template <typename T>
+__device__ T Softsign(T x)
+{
+    return x/(T(1)+fabs(x));
+}
+
+template <typename T>
+__device__ T d_Softsign(T x)
+{
+    T n = T(1)+fabs(x);
+    return T(1)/(n*n);
+}
+
 template<typename T>
 __device__ T Identity(T x){
     return x;
@@ -528,15 +577,22 @@ template d_matrix<double> MatrixActivate<double, relu<double>>(const d_matrix<do
 template d_matrix<double> MatrixActivate<double, d_relu<double>>(const d_matrix<double>&);
 template d_matrix<double> MatrixActivate<double, lrelu<double>>(const d_matrix<double>&);
 template d_matrix<double> MatrixActivate<double, d_lrelu<double>>(const d_matrix<double>&);
+template d_matrix<double> MatrixActivate<double, ELU<double>>(const d_matrix<double>&);
+template d_matrix<double> MatrixActivate<double, d_ELU<double>>(const d_matrix<double>&);
+template d_matrix<double> MatrixActivate<double, SELU<double>>(const d_matrix<double>&);
+template d_matrix<double> MatrixActivate<double, d_SELU<double>>(const d_matrix<double>&);
 template d_matrix<double> MatrixActivate<double, Identity<double>>(const d_matrix<double>&);
 template d_matrix<double> MatrixActivate<double, sigmoid<double>>(const d_matrix<double>&);
 template d_matrix<double> MatrixActivate<double, d_sigmoid<double>>(const d_matrix<double>&);
+template d_matrix<double> MatrixActivate<double, Softsign<double>>(const d_matrix<double>&);
+template d_matrix<double> MatrixActivate<double, d_Softsign<double>>(const d_matrix<double>&);
 template d_matrix<double> MatrixActivate<double, d_I<double>>(const d_matrix<double>&);
 template d_matrix<double> MatrixActivate<double, Tanh<double>>(const d_matrix<double>&);
 template d_matrix<double> MatrixActivate<double, d_tanh<double>>(const d_matrix<double>&);
 template d_matrix<double> MatrixActivate<double, sqr<double>>(const d_matrix<double>&);
 template d_matrix<double> MatrixActivate<double, devide<double>>(const d_matrix<double>&);
 template d_matrix<double> MatrixActivate<double, Log<double>>(const d_matrix<double>&);
+template d_matrix<double> MatrixActivate<double, Softplus<double>>(const d_matrix<double>&);
 template double plusAllElements(const d_matrix<double>&);
 template d_matrix<double> ScalaPlus(const d_matrix<double>&, double);
 template d_matrix<double> castToDoubleGPU(const d_matrix<double>&);

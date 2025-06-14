@@ -95,6 +95,14 @@ void ActivateLayer::Active(){
             output = MatrixActivate<double, sigmoid>(input); break;
         case ActivationType::Tanh:
             output = MatrixActivate<double, Tanh>(input); break;
+        case ActivationType::ELU:
+            output = MatrixActivate<double, ELU>(input); break;
+        case ActivationType::SELU:
+            output = MatrixActivate<double, SELU>(input); break;
+        case ActivationType::Softplus:
+            output = MatrixActivate<double, Softplus>(input); break;
+        case ActivationType::Softsign:
+            output = MatrixActivate<double, Softsign>(input); break;
         default:
             throw std::runtime_error("Unsupported ActivationType in perceptronLayer");
     }
@@ -108,15 +116,23 @@ void ActivateLayer::Active(){
 d_matrix<double> ActivateLayer::d_Active(const d_matrix<double>& z) {
     switch (act) {
         case ActivationType::ReLU:
-            return MatrixActivate<double, d_relu>(z);
+            return MatrixActivate<double, d_relu>(z); 
         case ActivationType::LReLU:
-            return MatrixActivate<double, d_lrelu>(z);
+            return MatrixActivate<double, d_lrelu>(z); 
         case ActivationType::Identity:
-            return MatrixActivate<double, d_I>(z);
+            return MatrixActivate<double, d_I>(z); 
         case ActivationType::Sigmoid:
-            return MatrixActivate<double, d_sigmoid>(z);
+            return MatrixActivate<double, d_sigmoid>(z); 
         case ActivationType::Tanh:
-            return MatrixActivate<double, d_tanh>(z);
+            return MatrixActivate<double, d_tanh>(z); 
+        case ActivationType::ELU:
+            return MatrixActivate<double, d_ELU>(z); 
+        case ActivationType::SELU:
+            return MatrixActivate<double, d_SELU>(z); 
+        case ActivationType::Softplus:
+            return MatrixActivate<double, sigmoid>(z);
+        case ActivationType::Softsign:
+            return MatrixActivate<double, d_Softsign>(z);
         default:
             throw std::runtime_error("Unsupported ActivationType in d_Active");
     }

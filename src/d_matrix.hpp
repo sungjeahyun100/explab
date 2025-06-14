@@ -259,6 +259,20 @@ template<typename T> __device__ T lrelu(T x);
 // 한글: Leaky ReLU 활성화 함수의 도함수를 적용하기 위한 디바이스 함수입니다.
 template<typename T> __device__ T d_lrelu(T x);
 
+template<typename T> __device__ T ELU(T x);
+
+template<typename T> __device__ T d_ELU(T x);
+
+template<typename T> __device__ T SELU(T x);
+
+template<typename T> __device__ T d_SELU(T x);
+
+template<typename T> __device__ T Softplus(T x);
+
+template<typename T> __device__ T Softsign(T x);
+
+template<typename T> __device__ T d_Softsign(T x);
+
 // English: Device function for applying the identity function.
 // 한글: 항등 함수를 적용하기 위한 디바이스 함수입니다.
 template<typename T> __device__ T Identity(T x);

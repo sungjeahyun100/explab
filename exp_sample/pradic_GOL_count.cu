@@ -19,18 +19,18 @@ int main(){
     const char *cmd = "find ../dataset/result -type f -delete";
     std::system(cmd);
 
-    std::ofstream loss_ofs(graph_path + "/loss_data_He_LReLU_MSE_batch50.txt");  // ← 추가
+    std::ofstream loss_ofs(graph_path + "/loss_data_Xavier_Softsign_CrossEntropy_batch50.txt");  // ← 추가
     loss_ofs << "# epoch loss\n"; 
 
-    Adam inputlayer(100, 512, 0.0001, InitType::He);
-    ActivateLayer inputAct(512, 1, ActivationType::LReLU);
-    Adam hiddenlayer1(512, 512, 0.0001, InitType::He);
-    ActivateLayer hiddenAct1(512, 1, ActivationType::LReLU);
-    Adam hiddenlayer2(512, 128, 0.0001, InitType::He);
-    ActivateLayer hiddenAct2(128, 1, ActivationType::LReLU);
-    Adam outputLayer(128, BIT_WIDTH, 0.0001, InitType::He);
-    ActivateLayer outAct(BIT_WIDTH, 1, ActivationType::LReLU);
-    LossLayer loss(BIT_WIDTH, 1, LossType::MSE);
+    Adam inputlayer(100, 512, 0.0001, InitType::Xavier);
+    ActivateLayer inputAct(512, 1, ActivationType::Softsign);
+    Adam hiddenlayer1(512, 512, 0.0001, InitType::Xavier);
+    ActivateLayer hiddenAct1(512, 1, ActivationType::Softsign);
+    Adam hiddenlayer2(512, 128, 0.0001, InitType::Xavier);
+    ActivateLayer hiddenAct2(128, 1, ActivationType::Softsign);
+    Adam outputLayer(128, BIT_WIDTH, 0.0001, InitType::Xavier);
+    ActivateLayer outAct(BIT_WIDTH, 1, ActivationType::Softsign);
+    LossLayer loss(BIT_WIDTH, 1, LossType::CrossEntropy);
 
     const int epochs = 100;
     const int batchSize = 50;
@@ -123,7 +123,7 @@ int main(){
         int count = 0;
         for(int b = 0; b < BIT_WIDTH; ++b){
             // sigmoid 출력이니 0.5 기준으로 0/1 결정
-            int bit = (pred(b,0) > 0.5) ? 1 : 0;
+            int bit = (pred(b,0) > 0.3) ? 1 : 0;
             count |= (bit << b);  // 2^b 만큼 더하기
         }
     

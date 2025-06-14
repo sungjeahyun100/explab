@@ -17,9 +17,13 @@ const std::string WEIGHT_DATAPATH = "../test_subject/";
 enum class ActivationType {
     ReLU,
     LReLU,
+    ELU,
+    SELU,
     Tanh,
     Identity,
-    Sigmoid
+    Sigmoid,
+    Softplus,
+    Softsign
 };
 
 enum class LossType{
