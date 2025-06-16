@@ -19,26 +19,28 @@ int main(){
     const char *cmd = "find ../dataset/result -type f -delete";
     std::system(cmd);
 
-    std::ofstream loss_ofs(graph_path + "/loss_data_Xavier_LReLU--Softsign--Sigmoid_CrossEntropy_batch50.txt");  // ← 추가
+    std::ofstream loss_ofs(graph_path + "/loss_data_Xavier_LReLU--Tanh--Softsign_CrossEntropy_batch50_Epoch1000.txt");  // ← 추가
     loss_ofs << "# epoch loss\n"; 
 
     Adam inputlayer(100, 512, 0.0001, InitType::Xavier);
     ActivateLayer inputAct(512, 1, ActivationType::LReLU);
 
     Adam hiddenlayer1(512, 512, 0.0001, InitType::Xavier);
-    ActivateLayer hiddenAct1(512, 1, ActivationType::Softsign);
+    ActivateLayer hiddenAct1(512, 1, ActivationType::Tanh);
 
     Adam hiddenlayer2(512, 128, 0.0001, InitType::Xavier);
-    ActivateLayer hiddenAct2(128, 1, ActivationType::Softsign);
+    ActivateLayer hiddenAct2(128, 1, ActivationType::Tanh);
 
     Adam outputLayer(128, BIT_WIDTH, 0.0001, InitType::Xavier);
-    ActivateLayer outAct(BIT_WIDTH, 1, ActivationType::Sigmoid);
+    ActivateLayer outAct(BIT_WIDTH, 1, ActivationType::Softsign);
 
     LossLayer loss(BIT_WIDTH, 1, LossType::CrossEntropy);
 
-    const int epochs = 100;
+    const int epochs = 1000;
     const int batchSize = 50;
     std::mt19937 rng(std::random_device{}());
+
+    double minLoss = std::numeric_limits<double>::infinity();
     
     for(int epoch = 0; epoch < epochs; ++epoch){
         auto startTime = std::chrono::steady_clock::now();
@@ -101,6 +103,17 @@ int main(){
                   << avgLoss
                   << "                                                                                                                                          "
                   << std::endl;
+
+        if (avgLoss < minLoss) {
+            minLoss = avgLoss;
+            inputlayer.saveWeight();
+            hiddenlayer1.saveWeight();
+            hiddenlayer2.saveWeight();
+            outputLayer.saveWeight();
+            std::cout << "  → 새로운 최저 손실(" << minLoss
+                      << ") 기록! 가중치 저장: " << "loss_data_Xavier_LReLU--Tanh--Softsign_CrossEntropy_batch50_Epoch1000.txt" << "\n";
+            
+        }
     }
 
     loss_ofs.close();

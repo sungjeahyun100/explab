@@ -49,12 +49,24 @@ plot \
 
 unset output
 
+set terminal pngcairo size 800,600 enhanced font 'Arial,12'
+set output 'loss_with_points_1000epoch.png'
+set title 'Epoch–Loss graph'
+set xlabel 'Epoch'
+set ylabel 'Loss'
+set grid
+
+plot \
+  'loss_data_Xavier_LReLU--Tanh--Softsign_CrossEntropy_batch50_Epoch1000.txt' using 1:2 with linespoints lw 2 pt 7 ps 1 title 'LReLU--Tanh--Softsign'
+
+unset output
+
 set terminal pngcairo size 1000,600 enhanced font 'Arial,12'
 set output 'loss_graph_with_LReLU.png'
 set title 'Epoch–Loss Comparison with good performence'
 set xlabel 'Epoch'
 set ylabel 'Loss' 
-set yrange [0.6:0.76]
+set yrange [0.6:0.85]
 set grid
 
 set style line  1 lc rgb '#E41A1C' pt 9 ps 1 lw 2

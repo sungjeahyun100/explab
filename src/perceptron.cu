@@ -28,12 +28,33 @@ void perceptronLayer::loadWeight(const std::string &path)
 }
 
 // 가중치 파일로 저장 (이름: subject+타임스탬프)
-void perceptronLayer::saveWeight()
-{
-    std::ofstream test_subject(WEIGHT_DATAPATH + "subject" + getCurrentTimestamp() + ".bin");
-    test_subject << weight;
-    test_subject << bias;
-    test_subject.close();
+void perceptronLayer::saveWeight() {
+    // 1) 파일명: subject_YYYYMMDD_HHMMSS.bin
+    std::string ts = getCurrentTimestamp();
+    std::string path = WEIGHT_DATAPATH + "subject_" + ts + ".bin";
+
+    // 2) 바이너리 모드로 열기
+    std::ofstream ofs(path, std::ios::binary);
+    if (!ofs) {
+        std::cerr << "가중치 파일 열기 실패: " << path << "\n";
+        return;
+    }
+
+    // 3) weight, bias 덤프
+    //    assuming weight and bias are contiguous (e.g., std::vector<double> or d_matrix)
+    size_t wCount = weight.size();      // 전체 요소 수
+    size_t bCount = bias.size();
+
+    // 먼저 요소 개수 기록 (나중에 로드할 때 도움이 됩니다)
+    ofs.write(reinterpret_cast<const char*>(&wCount), sizeof(wCount));
+    ofs.write(reinterpret_cast<const char*>(&bCount), sizeof(bCount));
+
+    // 실제 데이터 기록
+    ofs.write(reinterpret_cast<const char*>(weight.getHostPointer()), wCount * sizeof(double));
+    ofs.write(reinterpret_cast<const char*>(bias.getHostPointer()),  bCount * sizeof(double));
+
+    ofs.close();
+    std::cout << "  → 가중치 저장 완료: " << path << "\n";
 }
 
 d_matrix<double>& perceptronLayer::getOutput() { return output; }
