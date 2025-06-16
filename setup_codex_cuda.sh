@@ -35,15 +35,24 @@ mkdir -p "$BUILD_DIR"
 #echo "✅ build/genGOLdata 빌드 완료"
 
 nvcc -std=c++20 \
-    -I "$PROJECT_ROOT/src" \
-    "$PROJECT_ROOT/exp_sample/pradic_GOL_count.cu" \
-    "$PROJECT_ROOT/src/perceptron.cu" \
-    "$PROJECT_ROOT/src/d_matrix.cu" \
-    "$PROJECT_ROOT/src/database.cu" \
-    -o "$BUILD_DIR/GOL_count_pradic_exp" \
-    -lcurl \
-    -lcurand \
-    -Xcompiler="-pthread"
+    "$PROJECT_ROOT/exp_sample/deriv.cu" \
+    -o "$BUILD_DIR/deriv" \
+    -I "$PROJECT_ROOT/exp_sample" \
+    -lcurl -lcurand \
+    -Xcompiler -pthread
 
-echo "✅ build/GOL_count_pradic_exp 빌드 완료"
+echo "✅ build/deriv 빌드 완료"
+
+#nvcc -std=c++20 \
+#    -I "$PROJECT_ROOT/src" \
+#    "$PROJECT_ROOT/exp_sample/pradic_GOL_count.cu" \
+#    "$PROJECT_ROOT/src/perceptron.cu" \
+#    "$PROJECT_ROOT/src/d_matrix.cu" \
+#    "$PROJECT_ROOT/src/database.cu" \
+#    -o "$BUILD_DIR/GOL_count_pradic_exp" \
+#    -lcurl \
+#    -lcurand \
+#    -Xcompiler="-pthread"
+#
+#echo "✅ build/GOL_count_pradic_exp 빌드 완료"
 
