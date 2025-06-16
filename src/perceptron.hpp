@@ -23,7 +23,8 @@ enum class ActivationType {
     Identity,
     Sigmoid,
     Softplus,
-    Softsign
+    Softsign,
+    Swish
 };
 
 enum class LossType{

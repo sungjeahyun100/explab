@@ -273,6 +273,10 @@ template<typename T> __device__ T Softsign(T x);
 
 template<typename T> __device__ T d_Softsign(T x);
 
+template<typename T> __device__ T Swish(T x);
+
+template<typename T> __device__ T d_Swish(T x);
+
 // English: Device function for applying the identity function.
 // 한글: 항등 함수를 적용하기 위한 디바이스 함수입니다.
 template<typename T> __device__ T Identity(T x);

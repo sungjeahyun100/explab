@@ -103,6 +103,8 @@ void ActivateLayer::Active(){
             output = MatrixActivate<double, Softplus>(input); break;
         case ActivationType::Softsign:
             output = MatrixActivate<double, Softsign>(input); break;
+        case ActivationType::Swish:
+            output = MatrixActivate<double, Swish>(input); break;
         default:
             throw std::runtime_error("Unsupported ActivationType in perceptronLayer");
     }
@@ -133,6 +135,8 @@ d_matrix<double> ActivateLayer::d_Active(const d_matrix<double>& z) {
             return MatrixActivate<double, sigmoid>(z);
         case ActivationType::Softsign:
             return MatrixActivate<double, d_Softsign>(z);
+        case ActivationType::Swish:
+            return MatrixActivate<double, d_Swish>(z);
         default:
             throw std::runtime_error("Unsupported ActivationType in d_Active");
     }
