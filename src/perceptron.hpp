@@ -32,8 +32,49 @@ enum class LossType{
     CrossEntropy
 };
 
+inline std::string to_string(ActivationType act) {
+    switch (act) {
+        case ActivationType::ReLU:      return "ReLU";
+        case ActivationType::LReLU:     return "LReLU";
+        case ActivationType::ELU:       return "ELU";
+        case ActivationType::SELU:      return "SELU";
+        case ActivationType::Tanh:      return "Tanh";
+        case ActivationType::Identity:  return "Identity";
+        case ActivationType::Sigmoid:   return "Sigmoid";
+        case ActivationType::Softplus:  return "Softplus";
+        case ActivationType::Softsign:  return "Softsign";
+        case ActivationType::Swish:     return "Swish";
+        default:                        return "UnknownAct";
+    }
+}
+
+inline std::string to_string(LossType loss) {
+    switch (loss) {
+        case LossType::MSE:             return "MSE";
+        case LossType::CrossEntropy:    return "CrossEntropy";
+        default:                        return "UnknownLoss";
+    }
+}
+
+inline std::string to_string(InitType init) {
+    switch (init) {
+        case InitType::Xavier:          return "Xavier";
+        case InitType::He:              return "He";
+        case InitType::Uniform:          return "Uniform";
+        default:                        return "UnknownInit";
+    }
+}
  
 inline std::string getCurrentTimestamp();
+
+typedef struct convoluteId{
+        int inRow, inCol;
+        int kRow, kCol;
+        int numFilter;
+        int outRow, outCol;
+        double learning_rate;
+        InitType Init;
+}convoluteid;
 
 class convolutionLayer{
     private:
@@ -48,8 +89,8 @@ class convolutionLayer{
         std::vector<d_matrix<double>> outputs;
         d_matrix<double> flatOutput;
     public:
-        convolutionLayer(int iRow, int iCol, int fRow, int fCol,
-                          int nFilter, double lr, InitType init);
+        convoluteid classid;
+        convolutionLayer(int iRow, int iCol, int fRow, int fCol, int nFilter, double lr, InitType init);
         void feedforward(const d_matrix<double>& raw_input);
         void backprop(const d_matrix<double>& delta_flat);
         d_matrix<double>& getOutput();
@@ -100,14 +141,25 @@ class perceptronLayer {
 // 사용법: pushInput()으로 입력, Active()로 활성화 적용, getOutput()으로 결과 반환
 // 지원: ReLU, LReLU, Identity, Sigmoid
 // d_Active: 미분값 반환
+
+typedef struct Actid{
+    int row, col;
+    ActivationType Act;
+}activeid;
+
 class ActivateLayer{
     private:
         ActivationType act;
         d_matrix<double> input;
         d_matrix<double> output;
     public:
+        activeid classid;
         // 생성자: 행, 열, 활성화 종류 지정
-        ActivateLayer(int row, int col, ActivationType a) : input(row, col), output(row, col), act(a){}
+        ActivateLayer(int row, int col, ActivationType a) : input(row, col), output(row, col), act(a){
+            classid.row = row;
+            classid.col = col;
+            classid.Act = a;
+        }
         // 입력 설정
         void pushInput(const d_matrix<double>& in);
         // 활성화 적용 (output = f(input))
@@ -124,14 +176,25 @@ class ActivateLayer{
 // 사용법: pushTarget, pushOutput으로 데이터 입력 후 getLoss(), getGrad() 호출
 // 지원: MSE(평균제곱오차), CrossEntropy(크로스엔트로피)
 // getLoss: loss 반환, getGrad: dL/dz 반환
+
+typedef struct Lossid{
+    int row, col;
+    LossType loss;
+}lossid;
+
 class LossLayer{
     private:
         d_matrix<double> target;
         d_matrix<double> output;
         LossType Loss;
     public:
+        lossid classid;
         // 생성자: 행, 열, 손실 종류 지정
-        LossLayer(int row, int col, LossType L) : target(row, col), output(row, col), Loss(L){}
+        LossLayer(int row, int col, LossType L) : target(row, col), output(row, col), Loss(L){
+            classid.col = col;
+            classid.row = row;
+            classid.loss = L;
+        }
         // 타겟/출력 입력
         void pushTarget(const d_matrix<double>& Target);
         void pushOutput(const d_matrix<double>& Output);
@@ -144,6 +207,12 @@ class LossLayer{
 
 // Adam과 SGD----------------------------------------------------------------------------------------------------------------------------------------------------
 
+typedef struct AdamId{
+    int i, o;
+    double lr, b1, b2, epsilon;
+    InitType Init;
+}Adamid;
+
 class Adam : public perceptronLayer
 {
 private:
@@ -154,11 +223,19 @@ private:
     int t = 0;
 
 public:
+    Adamid classid;
     Adam(int i, int o, double lr, InitType Init) : perceptronLayer(i, o, lr, Init), m_W(o, i), v_W(o, i), m_B(o, 1), v_B(o, 1) {
         m_W.fill(0.00l);
         v_W.fill(0.00l);
         m_B.fill(0.00l);
         v_B.fill(0.00l);
+        classid.i = i;
+        classid.o = o;
+        classid.lr = lr;
+        classid.Init = Init;
+        classid.b1 = beta1;
+        classid.b2 = beta2;
+        classid.epsilon = epsilon;
     }
 
     virtual ~Adam();
@@ -166,17 +243,29 @@ public:
     void backprop(perceptronLayer* next, const d_matrix<double>& external_delta, const d_matrix<double>& act_deriv);   
 };
 
+typedef struct SGD_id{
+    int i, o;
+    double lr;
+    InitType Init;
+} SGDid;
 
 class SGD : public perceptronLayer
 {
 public:
-    SGD(int i, int o, double lr, InitType Init) : perceptronLayer(i, o, lr, Init) {}
+    SGDid classid;
+    SGD(int i, int o, double lr, InitType Init) : perceptronLayer(i, o, lr, Init) {
+        classid.i = i;
+        classid.o = o;
+        classid.lr = lr;
+        classid.Init = Init;
+    }
 
     virtual ~SGD();
 
     void backprop(perceptronLayer* next, const d_matrix<double>& external_delta, const d_matrix<double>& act_deriv);
 };
 
+inline void loadCurruntModelCurcuits();
 
 #endif
 

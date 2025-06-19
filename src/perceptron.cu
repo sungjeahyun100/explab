@@ -12,6 +12,11 @@ std::string getCurrentTimestamp()
     return oss.str();
 }
 
+inline void loadCurruntModelCurcuits()
+{
+    
+}
+
 // convolutionLayer 구현
 convolutionLayer::convolutionLayer(int iRow, int iCol, int fRow, int fCol,
                                    int nFilter, double lr, InitType init)
@@ -20,6 +25,15 @@ convolutionLayer::convolutionLayer(int iRow, int iCol, int fRow, int fCol,
       input(iRow, iCol), bias(nFilter, 1),
       flatOutput(nFilter * (iRow - fRow + 1) * (iCol - fCol + 1), 1)
 {
+    classid.inRow = iRow;
+    classid.inCol = iCol;
+    classid.kRow = fRow;
+    classid.kCol = fCol;
+    classid.numFilter = nFilter;
+    classid.learning_rate = lr;
+    classid.outRow = iRow-fRow+1;
+    classid.outCol = iCol - fCol + 1;
+    classid.Init = init;
     bias.fill(0.0);
     kernels.reserve(numFilter);
     outputs.reserve(numFilter);
