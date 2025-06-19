@@ -37,9 +37,22 @@ inline std::string getCurrentTimestamp();
 
 class convolutionLayer{
     private:
-        d_matrix<double> kernel;
+        int inRow, inCol;
+        int kRow, kCol;
+        int numFilter;
+        int outRow, outCol;
+        double learning_rate;
+        d_matrix<double> input;
+        std::vector<d_matrix<double>> kernels;
+        d_matrix<double> bias; // numFilter x 1
+        std::vector<d_matrix<double>> outputs;
+        d_matrix<double> flatOutput;
     public:
-        convolutionLayer();
+        convolutionLayer(int iRow, int iCol, int fRow, int fCol,
+                          int nFilter, double lr, InitType init);
+        void feedforward(const d_matrix<double>& raw_input);
+        void backprop(const d_matrix<double>& delta_flat);
+        d_matrix<double>& getOutput();
 };
 
 class perceptronLayer {
