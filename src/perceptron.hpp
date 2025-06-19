@@ -35,6 +35,13 @@ enum class LossType{
  
 inline std::string getCurrentTimestamp();
 
+class convolutionLayer{
+    private:
+        d_matrix<double> kernel;
+    public:
+        convolutionLayer();
+};
+
 class perceptronLayer {
     protected:
         int inputSize;
