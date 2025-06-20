@@ -86,50 +86,55 @@ d_matrix<double>& convolutionLayer::getOutput()
     return flatOutput;
 }
 
-// 가중치 파일에서 weight, bias 불러오기
-void perceptronLayer::loadWeight(const std::string &path)
-{
-    std::ifstream test_subject(path, std::ios::binary);
-    if (!test_subject) {
-        std::cerr << "Error opening file: " << path << std::endl;
-        return;
-    }
-
-    test_subject >> weight;
-    test_subject >> bias;
-
-    test_subject.close();
-}
-
-// 가중치 파일로 저장 (이름: subject+타임스탬프)
-void perceptronLayer::saveWeight() {
-    // 1) 파일명: subject_YYYYMMDD_HHMMSS.bin
-    std::string ts = getCurrentTimestamp();
-    std::string path = WEIGHT_DATAPATH + "subject_" + ts + ".bin";
-
-    // 2) 바이너리 모드로 열기
+void convolutionLayer::saveWeight(){
+    std::string id = to_string(classid);
+    std::string path = WEIGHT_DATAPATH + id + "-" + getCurrentTimestamp() + ".bin";
     std::ofstream ofs(path, std::ios::binary);
-    if (!ofs) {
-        std::cerr << "가중치 파일 열기 실패: " << path << "\n";
-        return;
+    if(!ofs){
+        std::cerr << "파일 열기 실패: " << path << "\n"; return;
     }
 
-    // 3) weight, bias 덤프
-    //    assuming weight and bias are contiguous (e.g., std::vector<double> or d_matrix)
-    size_t wCount = weight.size();      // 전체 요소 수
-    size_t bCount = bias.size();
+    size_t idLen = id.size();
+    ofs.write(reinterpret_cast<const char*>(&idLen), sizeof(size_t));
+    ofs.write(id.data(), idLen);
 
-    // 먼저 요소 개수 기록 (나중에 로드할 때 도움이 됩니다)
-    ofs.write(reinterpret_cast<const char*>(&wCount), sizeof(wCount));
-    ofs.write(reinterpret_cast<const char*>(&bCount), sizeof(bCount));
-
-    // 실제 데이터 기록
-    ofs.write(reinterpret_cast<const char*>(weight.getHostPointer()), wCount * sizeof(double));
-    ofs.write(reinterpret_cast<const char*>(bias.getHostPointer()),  bCount * sizeof(double));
-
+    ofs.write(reinterpret_cast<const char*>(&classid.numFilter), sizeof(int));
+    ofs.write(reinterpret_cast<const char*>(&classid.kRow), sizeof(int));
+    ofs.write(reinterpret_cast<const char*>(&classid.kCol), sizeof(int));
+    for(int f=0; f<classid.numFilter; ++f){
+        ofs.write(reinterpret_cast<const char*>(kernels[f].getHostPointer()), classid.kRow*classid.kCol*sizeof(double));
+    }
+    ofs.write(reinterpret_cast<const char*>(bias.getHostPointer()), classid.numFilter*sizeof(double));
     ofs.close();
     std::cout << "  → 가중치 저장 완료: " << path << "\n";
 }
+
+void convolutionLayer::loadWeight(const std::string& path){
+    std::ifstream ifs(path, std::ios::binary);
+    if(!ifs){ std::cerr << "Error opening file: " << path << std::endl; return; }
+    size_t idLen=0; ifs.read(reinterpret_cast<char*>(&idLen), sizeof(size_t));
+    std::string fileId(idLen, '\0');
+    ifs.read(fileId.data(), idLen);
+    if(fileId != to_string(classid)){
+        std::cerr << "모델 ID 불일치: " << fileId << " != " << to_string(classid) << "\n";
+        return;
+    }
+    int nF=0, kr=0, kc=0;
+    ifs.read(reinterpret_cast<char*>(&nF), sizeof(int));
+    ifs.read(reinterpret_cast<char*>(&kr), sizeof(int));
+    ifs.read(reinterpret_cast<char*>(&kc), sizeof(int));
+    if(nF!=numFilter || kr!=kRow || kc!=kCol){
+        std::cerr << "Conv layer size mismatch when loading " << path << std::endl;
+    }
+    for(int f=0; f<numFilter; ++f){
+        ifs.read(reinterpret_cast<char*>(kernels[f].getHostPointer()), kRow*kCol*sizeof(double));
+        kernels[f].cpyToDev();
+    }
+    ifs.read(reinterpret_cast<char*>(bias.getHostPointer()), numFilter*sizeof(double));
+    bias.cpyToDev();
+    ifs.close();
+}
+
 
 d_matrix<double>& perceptronLayer::getOutput() { return output; }
 
@@ -239,7 +244,41 @@ d_matrix<double> ActivateLayer::d_Active(const d_matrix<double>& z) {
 
 // 활성화 결과 반환
 const d_matrix<double>& ActivateLayer::getOutput() const {
-    return output; 
+    return output;
+}
+
+void ActivateLayer::saveLayer(){
+    std::string id = to_string(classid);
+    std::string path = WEIGHT_DATAPATH + id + "-" + getCurrentTimestamp() + ".bin";
+    std::ofstream ofs(path, std::ios::binary);
+    if(!ofs){ std::cerr << "파일 열기 실패: " << path << "\n"; return; }
+    size_t len = id.size();
+    ofs.write(reinterpret_cast<const char*>(&len), sizeof(size_t));
+    ofs.write(id.data(), len);
+    ofs.write(reinterpret_cast<const char*>(&classid.row), sizeof(int));
+    ofs.write(reinterpret_cast<const char*>(&classid.col), sizeof(int));
+    int act = static_cast<int>(classid.Act);
+    ofs.write(reinterpret_cast<const char*>(&act), sizeof(int));
+    ofs.close();
+    std::cout << "  → 레이어 저장 완료: " << path << "\n";
+}
+
+void ActivateLayer::loadLayer(const std::string& path){
+    std::ifstream ifs(path, std::ios::binary);
+    if(!ifs){ std::cerr << "Error opening file: " << path << std::endl; return; }
+    size_t len=0; ifs.read(reinterpret_cast<char*>(&len), sizeof(size_t));
+    std::string fileId(len, '\0');
+    ifs.read(fileId.data(), len);
+    if(fileId != to_string(classid)){
+        std::cerr << "모델 ID 불일치: " << fileId << " != " << to_string(classid) << "\n";
+        return;
+    }
+    int act;
+    ifs.read(reinterpret_cast<char*>(&classid.row), sizeof(int));
+    ifs.read(reinterpret_cast<char*>(&classid.col), sizeof(int));
+    ifs.read(reinterpret_cast<char*>(&act), sizeof(int));
+    classid.Act = static_cast<ActivationType>(act);
+    ifs.close();
 }
 
 // 타겟 입력
@@ -324,7 +363,82 @@ d_matrix<double> LossLayer::getGrad() {
             throw std::runtime_error("Unsupported LossType in getGrad");
     }
 }
+
+void LossLayer::saveLayer(){
+    std::string id = to_string(classid);
+    std::string path = WEIGHT_DATAPATH + id + "-" + getCurrentTimestamp() + ".bin";
+    std::ofstream ofs(path, std::ios::binary);
+    if(!ofs){ std::cerr << "파일 열기 실패: " << path << "\n"; return; }
+    size_t len=id.size();
+    ofs.write(reinterpret_cast<const char*>(&len), sizeof(size_t));
+    ofs.write(id.data(), len);
+    ofs.write(reinterpret_cast<const char*>(&classid.row), sizeof(int));
+    ofs.write(reinterpret_cast<const char*>(&classid.col), sizeof(int));
+    int loss = static_cast<int>(classid.loss);
+    ofs.write(reinterpret_cast<const char*>(&loss), sizeof(int));
+    ofs.close();
+    std::cout << "  → 레이어 저장 완료: " << path << "\n";
+}
+
+void LossLayer::loadLayer(const std::string& path){
+    std::ifstream ifs(path, std::ios::binary);
+    if(!ifs){ std::cerr << "Error opening file: " << path << std::endl; return; }
+    size_t len=0; ifs.read(reinterpret_cast<char*>(&len), sizeof(size_t));
+    std::string fileId(len, '\0');
+    ifs.read(fileId.data(), len);
+    if(fileId != to_string(classid)){
+        std::cerr << "모델 ID 불일치: " << fileId << " != " << to_string(classid) << "\n";
+        return;
+    }
+    int loss;
+    ifs.read(reinterpret_cast<char*>(&classid.row), sizeof(int));
+    ifs.read(reinterpret_cast<char*>(&classid.col), sizeof(int));
+    ifs.read(reinterpret_cast<char*>(&loss), sizeof(int));
+    classid.loss = static_cast<LossType>(loss);
+    ifs.close();
+}
 Adam::~Adam(){}
+
+void Adam::saveWeight(){
+    std::string id = to_string(classid);
+    std::string path = WEIGHT_DATAPATH + id + "-" + getCurrentTimestamp() + ".bin";
+    std::ofstream ofs(path, std::ios::binary);
+    if(!ofs){ std::cerr << "가중치 파일 열기 실패: " << path << "\n"; return; }
+    size_t idLen=id.size();
+    ofs.write(reinterpret_cast<const char*>(&idLen), sizeof(size_t));
+    ofs.write(id.data(), idLen);
+    size_t wCount = weight.size();
+    size_t bCount = bias.size();
+    ofs.write(reinterpret_cast<const char*>(&wCount), sizeof(wCount));
+    ofs.write(reinterpret_cast<const char*>(&bCount), sizeof(bCount));
+    ofs.write(reinterpret_cast<const char*>(weight.getHostPointer()), wCount * sizeof(double));
+    ofs.write(reinterpret_cast<const char*>(bias.getHostPointer()),  bCount * sizeof(double));
+    ofs.close();
+    std::cout << "  → 가중치 저장 완료: " << path << "\n";
+}
+
+void Adam::loadWeight(const std::string& path){
+    std::ifstream ifs(path, std::ios::binary);
+    if(!ifs){ std::cerr << "Error opening file: " << path << std::endl; return; }
+    size_t idLen=0; ifs.read(reinterpret_cast<char*>(&idLen), sizeof(size_t));
+    std::string fileId(idLen, '\0');
+    ifs.read(fileId.data(), idLen);
+    if(fileId != to_string(classid)){
+        std::cerr << "모델 ID 불일치: " << fileId << " != " << to_string(classid) << "\n";
+        return;
+    }
+    size_t wCount=0,bCount=0;
+    ifs.read(reinterpret_cast<char*>(&wCount), sizeof(wCount));
+    ifs.read(reinterpret_cast<char*>(&bCount), sizeof(bCount));
+    if(wCount!=weight.size()||bCount!=bias.size()){
+        std::cerr << "Weight size mismatch when loading: " << path << "\n";
+    }
+    ifs.read(reinterpret_cast<char*>(weight.getHostPointer()), wCount*sizeof(double));
+    ifs.read(reinterpret_cast<char*>(bias.getHostPointer()), bCount*sizeof(double));
+    weight.cpyToDev();
+    bias.cpyToDev();
+    ifs.close();
+}
 
 // Adam 옵티마이저 역전파
 // m, v: 1차/2차 모멘트, 베타1/2, epsilon, t(스텝)
@@ -383,6 +497,47 @@ void Adam::backprop(perceptronLayer* next, const d_matrix<double>& external_delt
 }
 
 SGD::~SGD(){}
+
+void SGD::saveWeight(){
+    std::string id = to_string(classid);
+    std::string path = WEIGHT_DATAPATH + id + "-" + getCurrentTimestamp() + ".bin";
+    std::ofstream ofs(path, std::ios::binary);
+    if(!ofs){ std::cerr << "가중치 파일 열기 실패: " << path << "\n"; return; }
+    size_t idLen=id.size();
+    ofs.write(reinterpret_cast<const char*>(&idLen), sizeof(size_t));
+    ofs.write(id.data(), idLen);
+    size_t wCount=weight.size();
+    size_t bCount=bias.size();
+    ofs.write(reinterpret_cast<const char*>(&wCount), sizeof(wCount));
+    ofs.write(reinterpret_cast<const char*>(&bCount), sizeof(bCount));
+    ofs.write(reinterpret_cast<const char*>(weight.getHostPointer()), wCount*sizeof(double));
+    ofs.write(reinterpret_cast<const char*>(bias.getHostPointer()),  bCount*sizeof(double));
+    ofs.close();
+    std::cout << "  → 가중치 저장 완료: " << path << "\n";
+}
+
+void SGD::loadWeight(const std::string& path){
+    std::ifstream ifs(path, std::ios::binary);
+    if(!ifs){ std::cerr << "Error opening file: " << path << std::endl; return; }
+    size_t idLen=0; ifs.read(reinterpret_cast<char*>(&idLen), sizeof(size_t));
+    std::string fileId(idLen, '\0');
+    ifs.read(fileId.data(), idLen);
+    if(fileId != to_string(classid)){
+        std::cerr << "모델 ID 불일치: " << fileId << " != " << to_string(classid) << "\n";
+        return;
+    }
+    size_t wCount=0,bCount=0;
+    ifs.read(reinterpret_cast<char*>(&wCount), sizeof(wCount));
+    ifs.read(reinterpret_cast<char*>(&bCount), sizeof(bCount));
+    if(wCount!=weight.size()||bCount!=bias.size()){
+        std::cerr << "Weight size mismatch when loading: " << path << "\n";
+    }
+    ifs.read(reinterpret_cast<char*>(weight.getHostPointer()), wCount*sizeof(double));
+    ifs.read(reinterpret_cast<char*>(bias.getHostPointer()), bCount*sizeof(double));
+    weight.cpyToDev();
+    bias.cpyToDev();
+    ifs.close();
+}
 
 // SGD 옵티마이저 역전파
 // W -= lr * grad
