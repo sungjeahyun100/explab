@@ -93,6 +93,10 @@ d_matrix<double>& convolutionLayer::getOutput()
 }
 
 void convolutionLayer::saveWeight(){
+
+    std::string id_layerType = "C";
+    std::string id_frow = std::to_string(classid.inRow);
+
     std::string id = to_string(classid);
     std::string path = WEIGHT_DATAPATH + id + "-" + getCurrentTimestamp() + ".bin";
     std::ofstream ofs(path, std::ios::binary);
@@ -254,9 +258,20 @@ const d_matrix<double>& ActivateLayer::getOutput() const {
 }
 
 void ActivateLayer::saveLayer(){
-    std::string id = to_string(classid);
+    std::string id_layertype = "A";
+    std::string id_row = std::to_string(classid.row);
+    std::string id_col = std::to_string(classid.col);
+    std::string id_ActivateType = to_string(classid.Act);
+
+    std::string id = id_layertype + id_row + "-" + id_col + "-" + id_ActivateType;
     std::string path = WEIGHT_DATAPATH + id + "-" + getCurrentTimestamp() + ".bin";
     std::ofstream ofs(path, std::ios::binary);
+    try{
+        fs::permissions(path, fs::perms::owner_all | fs::perms::group_read | fs::perms::others_read, fs::perm_options::add);
+    }catch(const fs::filesystem_error& e){
+        std::error_code ec = e.code();
+        std::cerr << "권한 부여 실패:" << e.what() << "(" << ec.value() << ": " << ec.message() << ")\n";
+    }
     if(!ofs){ std::cerr << "파일 열기 실패: " << path << "\n"; return; }
     size_t len = id.size();
     ofs.write(reinterpret_cast<const char*>(&len), sizeof(size_t));
@@ -270,13 +285,19 @@ void ActivateLayer::saveLayer(){
 }
 
 void ActivateLayer::loadLayer(const std::string& path){
+    std::string id_layertype = "A";
+    std::string id_row = std::to_string(classid.row);
+    std::string id_col = std::to_string(classid.col);
+    std::string id_ActivateType = to_string(classid.Act);
+
+    std::string id = id_layertype + id_row + "-" + id_col + "-" + id_ActivateType;
     std::ifstream ifs(path, std::ios::binary);
     if(!ifs){ std::cerr << "Error opening file: " << path << std::endl; return; }
     size_t len=0; ifs.read(reinterpret_cast<char*>(&len), sizeof(size_t));
     std::string fileId(len, '\0');
     ifs.read(fileId.data(), len);
-    if(fileId != to_string(classid)){
-        std::cerr << "모델 ID 불일치: " << fileId << " != " << to_string(classid) << "\n";
+    if(fileId != id){
+        std::cerr << "모델 ID 불일치: " << fileId << " != " << id << "\n";
         return;
     }
     int act;
@@ -371,9 +392,20 @@ d_matrix<double> LossLayer::getGrad() {
 }
 
 void LossLayer::saveLayer(){
-    std::string id = to_string(classid);
+    std::string id_layertype = "L";
+    std::string id_row = std::to_string(classid.row);
+    std::string id_col = std::to_string(classid.col);
+    std::string id_lossType = to_string(classid.loss);
+
+    std::string id = id_layertype + "-" + id_row + "-" + id_col + "-" + id_lossType;
     std::string path = WEIGHT_DATAPATH + id + "-" + getCurrentTimestamp() + ".bin";
     std::ofstream ofs(path, std::ios::binary);
+    try{
+        fs::permissions(path, fs::perms::owner_all | fs::perms::group_read | fs::perms::others_read, fs::perm_options::add);
+    }catch(const fs::filesystem_error& e){
+        std::error_code ec = e.code();
+        std::cerr << "권한 부여 실패:" << e.what() << "(" << ec.value() << ": " << ec.message() << ")\n";
+    }
     if(!ofs){ std::cerr << "파일 열기 실패: " << path << "\n"; return; }
     size_t len=id.size();
     ofs.write(reinterpret_cast<const char*>(&len), sizeof(size_t));
@@ -387,13 +419,20 @@ void LossLayer::saveLayer(){
 }
 
 void LossLayer::loadLayer(const std::string& path){
+    std::string id_layertype = "L";
+    std::string id_row = std::to_string(classid.row);
+    std::string id_col = std::to_string(classid.col);
+    std::string id_lossType = to_string(classid.loss);
+
+    std::string id = id_layertype + "-" + id_row + "-" + id_col + "-" + id_lossType;
+
     std::ifstream ifs(path, std::ios::binary);
     if(!ifs){ std::cerr << "Error opening file: " << path << std::endl; return; }
     size_t len=0; ifs.read(reinterpret_cast<char*>(&len), sizeof(size_t));
     std::string fileId(len, '\0');
     ifs.read(fileId.data(), len);
-    if(fileId != to_string(classid)){
-        std::cerr << "모델 ID 불일치: " << fileId << " != " << to_string(classid) << "\n";
+    if(fileId != id){
+        std::cerr << "모델 ID 불일치: " << fileId << " != " << id << "\n";
         return;
     }
     int loss;
@@ -406,9 +445,25 @@ void LossLayer::loadLayer(const std::string& path){
 Adam::~Adam(){}
 
 void Adam::saveWeight(){
-    std::string id = to_string(classid);
+
+    std::string id_optimize = "A";
+    std::string id_inputSize = std::to_string(classid.i);
+    std::string id_outputSize = std::to_string(classid.o);
+    std::string id_lr = to_string(classid.lr);
+    std::string id_beta1 = std::to_string(classid.b1);
+    std::string id_beta2 = std::to_string(classid.b2);
+    std::string id_Init = to_string(classid.Init);
+    std::string id_epsilon = to_string(classid.epsilon);
+
+    std::string id = id_optimize + id_inputSize + "-" + id_outputSize + "-" + id_lr + id_Init + "-" + id_beta1 + "-" + id_beta2 + "-" + id_epsilon;
     std::string path = WEIGHT_DATAPATH + id + "-" + getCurrentTimestamp() + ".bin";
     std::ofstream ofs(path, std::ios::binary);
+    try{
+        fs::permissions(path, fs::perms::owner_all | fs::perms::group_read | fs::perms::others_read, fs::perm_options::add);
+    }catch(const fs::filesystem_error& e){
+        std::error_code ec = e.code();
+        std::cerr << "권한 부여 실패:" << e.what() << "(" << ec.value() << ": " << ec.message() << ")\n";
+    }
     if(!ofs){ std::cerr << "가중치 파일 열기 실패: " << path << "\n"; return; }
     size_t idLen=id.size();
     ofs.write(reinterpret_cast<const char*>(&idLen), sizeof(size_t));
@@ -423,27 +478,62 @@ void Adam::saveWeight(){
     std::cout << "  → 가중치 저장 완료: " << path << "\n";
 }
 
-void Adam::loadWeight(const std::string& path){
+
+void Adam::loadWeight(const std::string& path) {
     std::ifstream ifs(path, std::ios::binary);
-    if(!ifs){ std::cerr << "Error opening file: " << path << std::endl; return; }
-    size_t idLen=0; ifs.read(reinterpret_cast<char*>(&idLen), sizeof(size_t));
-    std::string fileId(idLen, '\0');
-    ifs.read(fileId.data(), idLen);
-    if(fileId != to_string(classid)){
-        std::cerr << "모델 ID 불일치: " << fileId << " != " << to_string(classid) << "\n";
+    if (!ifs) {
+        std::cerr << "가중치 파일 열기 실패: " << path << std::endl;
         return;
     }
-    size_t wCount=0,bCount=0;
+
+    // 1. 파일에 저장된 ID 읽기
+    size_t idLen = 0;
+    ifs.read(reinterpret_cast<char*>(&idLen), sizeof(size_t));
+    std::string fileId(idLen, '\0');
+    ifs.read(&fileId[0], idLen);
+
+    // 2. 현재 클래스 ID로 기대되는 ID 생성 (saveWeight와 동일한 로직)
+    std::string id_optimize   = "A";
+    std::string id_inputSize  = std::to_string(classid.i);
+    std::string id_outputSize = std::to_string(classid.o);
+    std::string id_lr         = to_string(classid.lr);
+    std::string id_beta1      = std::to_string(classid.b1);
+    std::string id_beta2      = std::to_string(classid.b2);
+    std::string id_Init       = to_string(classid.Init);
+    std::string id_epsilon    = to_string(classid.epsilon);
+
+    std::string expectedId = id_optimize + id_inputSize + "-" + id_outputSize + "-"
+                           + id_lr + id_Init + "-" + id_beta1 + "-"
+                           + id_beta2 + "-" + id_epsilon;
+
+    if (fileId != expectedId) {
+        std::cerr << "모델 ID 불일치: " << fileId << " != " << expectedId << std::endl;
+        return;
+    }
+
+    // 3. 가중치 및 바이어스 개수 읽기
+    size_t wCount = 0, bCount = 0;
     ifs.read(reinterpret_cast<char*>(&wCount), sizeof(wCount));
     ifs.read(reinterpret_cast<char*>(&bCount), sizeof(bCount));
-    if(wCount!=weight.size()||bCount!=bias.size()){
-        std::cerr << "Weight size mismatch when loading: " << path << "\n";
+
+    if (wCount != weight.size() || bCount != bias.size()) {
+        std::cerr << "가중치 크기 불일치: 기대=" << weight.size()
+                  << ", 파일=" << wCount
+                  << "; 편향 기대=" << bias.size()
+                  << ", 파일=" << bCount << std::endl;
+        // 필요한 경우 예외 처리 또는 조정
     }
-    ifs.read(reinterpret_cast<char*>(weight.getHostPointer()), wCount*sizeof(double));
-    ifs.read(reinterpret_cast<char*>(bias.getHostPointer()), bCount*sizeof(double));
+
+    // 4. 데이터 로드
+    ifs.read(reinterpret_cast<char*>(weight.getHostPointer()), wCount * sizeof(double));
+    ifs.read(reinterpret_cast<char*>(bias.getHostPointer()),   bCount * sizeof(double));
+    ifs.close();
+
+    // 5. 디바이스 메모리로 복사
     weight.cpyToDev();
     bias.cpyToDev();
-    ifs.close();
+
+    std::cout << "  → 가중치 로드 완료: " << path << std::endl;
 }
 
 // Adam 옵티마이저 역전파
@@ -505,9 +595,22 @@ void Adam::backprop(perceptronLayer* next, const d_matrix<double>& external_delt
 SGD::~SGD(){}
 
 void SGD::saveWeight(){
-    std::string id = to_string(classid);
+
+    std::string id_optimize = "S";
+    std::string id_inputSize = std::to_string(classid.i);
+    std::string id_outputSize = std::to_string(classid.o);
+    std::string id_lr = to_string(classid.lr);
+    std::string id_Init = to_string(classid.Init);
+
+    std::string id = id_optimize + id_inputSize + "-" + id_outputSize + "-" + id_lr + "-" + id_Init; 
     std::string path = WEIGHT_DATAPATH + id + "-" + getCurrentTimestamp() + ".bin";
     std::ofstream ofs(path, std::ios::binary);
+    try{
+        fs::permissions(path, fs::perms::owner_all | fs::perms::group_read | fs::perms::others_read, fs::perm_options::add);
+    }catch(const fs::filesystem_error& e){
+        std::error_code ec = e.code();
+        std::cerr << "권한 부여 실패:" << e.what() << "(" << ec.value() << ": " << ec.message() << ")\n";
+    }
     if(!ofs){ std::cerr << "가중치 파일 열기 실패: " << path << "\n"; return; }
     size_t idLen=id.size();
     ofs.write(reinterpret_cast<const char*>(&idLen), sizeof(size_t));
@@ -523,13 +626,20 @@ void SGD::saveWeight(){
 }
 
 void SGD::loadWeight(const std::string& path){
+    std::string id_optimize = "S";
+    std::string id_inputSize = std::to_string(classid.i);
+    std::string id_outputSize = std::to_string(classid.o);
+    std::string id_lr = to_string(classid.lr);
+    std::string id_Init = to_string(classid.Init);
+
+    std::string id = id_optimize + id_inputSize + "-" + id_outputSize + "-" + id_lr + "-" + id_Init; 
     std::ifstream ifs(path, std::ios::binary);
     if(!ifs){ std::cerr << "Error opening file: " << path << std::endl; return; }
     size_t idLen=0; ifs.read(reinterpret_cast<char*>(&idLen), sizeof(size_t));
     std::string fileId(idLen, '\0');
     ifs.read(fileId.data(), idLen);
-    if(fileId != to_string(classid)){
-        std::cerr << "모델 ID 불일치: " << fileId << " != " << to_string(classid) << "\n";
+    if(fileId != id){
+        std::cerr << "모델 ID 불일치: " << fileId << " != " << id << "\n";
         return;
     }
     size_t wCount=0,bCount=0;
