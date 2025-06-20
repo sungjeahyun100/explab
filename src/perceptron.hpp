@@ -15,6 +15,8 @@
 
 const std::string WEIGHT_DATAPATH = "../test_subject/";
 
+namespace fs = std::filesystem;
+
 enum class ActivationType {
     ReLU,
     LReLU,
@@ -64,6 +66,24 @@ inline std::string to_string(InitType init) {
         case InitType::Uniform:          return "Uniform";
         default:                        return "UnknownInit";
     }
+}
+
+inline std::string to_string(int lr){
+    if (lr <= 0.0) return "0";
+
+    int exponent = 0;
+    // lr을 10씩 곱해서 10 이상이 될 때까지
+    while (lr < 10.0) {
+        lr *= 10.0;
+        ++exponent;
+    }
+    // 소수점 제거 (원하시면 반올림도 가능)
+    int coefficient = static_cast<int>(std::round(lr));
+
+    // 문자열로 합치기
+    return std::to_string(coefficient)
+         + "e-" 
+         + std::to_string(exponent);
 }
  
 inline std::string getCurrentTimestamp();
@@ -204,6 +224,8 @@ class LossLayer{
         void pushTarget(const d_matrix<double>& Target);
         void pushOutput(const d_matrix<double>& Output);
         // 손실값 반환
+        void saveLayer();
+        void loadLayer(const std::string& path);
         double getLoss();
         // 손실 미분 반환
         d_matrix<double> getGrad();
