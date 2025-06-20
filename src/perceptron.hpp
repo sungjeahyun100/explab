@@ -88,7 +88,6 @@ inline std::string to_string(int lr){
  
 inline std::string getCurrentTimestamp();
 
-
 typedef struct convoluteId{
         int inRow, inCol;
         int kRow, kCol;
@@ -154,7 +153,9 @@ class perceptronLayer {
         void updateWeightInDev();
         // getOutput: 계층 출력 반환
         d_matrix<double>& getOutput();
-        // 가중치 저장/불러오기는 파생 클래스에서 구현
+        // saveWeight/loadWeight: 가중치 저장/불러오기
+        void saveWeight();
+        void loadWeight(const std::string& path);
 };
 
 // ActivateLayer-------------------------------------------------------------------------------------------------------------------
@@ -228,8 +229,6 @@ class LossLayer{
         double getLoss();
         // 손실 미분 반환
         d_matrix<double> getGrad();
-        void saveLayer();
-        void loadLayer(const std::string& path);
 };
 
 
@@ -299,6 +298,7 @@ public:
 
 inline void createDirectory(std::string fileName);
 
+<<<<<<< HEAD
 // -----------------------------------------------------------------------------
 // ID 문자열 생성 유틸리티
 inline std::string exp_to_string(double v) {
@@ -410,5 +410,7 @@ inline std::string to_string(const lossid& id) {
            to_string(id.loss);
 }
 
+=======
+>>>>>>> f02b4af628e5715b2ecba8ebe547351d1e67d0d4
 #endif
 
