@@ -68,7 +68,6 @@ inline std::string to_string(InitType init) {
  
 inline std::string getCurrentTimestamp();
 
-
 typedef struct convoluteId{
         int inRow, inCol;
         int kRow, kCol;
@@ -134,7 +133,9 @@ class perceptronLayer {
         void updateWeightInDev();
         // getOutput: 계층 출력 반환
         d_matrix<double>& getOutput();
-        // 가중치 저장/불러오기는 파생 클래스에서 구현
+        // saveWeight/loadWeight: 가중치 저장/불러오기
+        void saveWeight();
+        void loadWeight(const std::string& path);
 };
 
 // ActivateLayer-------------------------------------------------------------------------------------------------------------------
@@ -206,8 +207,6 @@ class LossLayer{
         double getLoss();
         // 손실 미분 반환
         d_matrix<double> getGrad();
-        void saveLayer();
-        void loadLayer(const std::string& path);
 };
 
 
@@ -276,80 +275,6 @@ public:
 };
 
 inline void createDirectory(std::string fileName);
-
-// -----------------------------------------------------------------------------
-// ID 문자열 생성 유틸리티
-inline std::string exp_to_string(double v) {
-    if (v == 0) return "0";
-    int e = static_cast<int>(std::round(std::log10(1.0 / v)));
-    return "e" + std::to_string(e);
-}
-
-inline std::string to_string(const Adamid& id) {
-    return "A-" + std::to_string(id.i) + "-" + std::to_string(id.o) + "-" +
-           exp_to_string(id.lr) + "-" + to_string(id.Init) + "-" +
-           std::to_string(id.b1) + "-" + std::to_string(id.b2) + "-" +
-           exp_to_string(id.epsilon);
-}
-
-inline std::string to_string(const SGDid& id) {
-    return "S-" + std::to_string(id.i) + "-" + std::to_string(id.o) + "-" +
-           exp_to_string(id.lr) + "-" + to_string(id.Init);
-}
-
-inline std::string to_string(const convoluteid& id) {
-    return "C-" + std::to_string(id.inRow) + "*" + std::to_string(id.inCol) + "-" +
-           std::to_string(id.kRow) + "*" + std::to_string(id.kCol) + "-" +
-           std::to_string(id.numFilter) + "-" + exp_to_string(id.learning_rate) +
-           "-" + to_string(id.Init);
-}
-
-inline std::string to_string(const activeid& id) {
-    return "A" + std::to_string(id.row) + "-" + std::to_string(id.col) + "-" +
-           to_string(id.Act);
-}
-
-inline std::string to_string(const lossid& id) {
-    return "L" + std::to_string(id.row) + "-" + std::to_string(id.col) + "-" +
-           to_string(id.loss);
-}
-
-// -----------------------------------------------------------------------------
-// ID 문자열 생성 유틸리티
-inline std::string exp_to_string(double v) {
-    if (v == 0) return "0";
-    int e = static_cast<int>(std::round(std::log10(1.0 / v)));
-    return "e" + std::to_string(e);
-}
-
-inline std::string to_string(const Adamid& id) {
-    return "A-" + std::to_string(id.i) + "-" + std::to_string(id.o) + "-" +
-           exp_to_string(id.lr) + "-" + to_string(id.Init) + "-" +
-           std::to_string(id.b1) + "-" + std::to_string(id.b2) + "-" +
-           exp_to_string(id.epsilon);
-}
-
-inline std::string to_string(const SGDid& id) {
-    return "S-" + std::to_string(id.i) + "-" + std::to_string(id.o) + "-" +
-           exp_to_string(id.lr) + "-" + to_string(id.Init);
-}
-
-inline std::string to_string(const convoluteid& id) {
-    return "C-" + std::to_string(id.inRow) + "*" + std::to_string(id.inCol) + "-" +
-           std::to_string(id.kRow) + "*" + std::to_string(id.kCol) + "-" +
-           std::to_string(id.numFilter) + "-" + exp_to_string(id.learning_rate) +
-           "-" + to_string(id.Init);
-}
-
-inline std::string to_string(const activeid& id) {
-    return "A" + std::to_string(id.row) + "-" + std::to_string(id.col) + "-" +
-           to_string(id.Act);
-}
-
-inline std::string to_string(const lossid& id) {
-    return "L" + std::to_string(id.row) + "-" + std::to_string(id.col) + "-" +
-           to_string(id.loss);
-}
 
 #endif
 
