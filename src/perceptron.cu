@@ -12,9 +12,15 @@ std::string getCurrentTimestamp()
     return oss.str();
 }
 
-inline void loadCurruntModelCurcuits()
+inline void createDirectory(std::string fileName)
 {
-    
+    std::string path = WEIGHT_DATAPATH + fileName + getCurrentTimestamp() + ".bin";
+    std::filesystem::create_directory(path);
+    std::error_code ec;
+    std::filesystem::permissions(path, std::filesystem::perms::owner_all | std::filesystem::perms::others_all, ec);
+    if (ec) {
+        std::cerr << "Permission change failed for " << fileName << ": " << ec.message() << std::endl;
+    }
 }
 
 // convolutionLayer 구현

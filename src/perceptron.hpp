@@ -10,6 +10,7 @@
 #include <iomanip>
 #include <chrono>
 #include <sstream>
+#include <filesystem>
 #include "d_matrix.hpp"
 
 const std::string WEIGHT_DATAPATH = "../test_subject/";
@@ -265,7 +266,7 @@ public:
     void backprop(perceptronLayer* next, const d_matrix<double>& external_delta, const d_matrix<double>& act_deriv);
 };
 
-inline void loadCurruntModelCurcuits();
+inline void createDirectory(std::string fileName);
 
 #endif
 
