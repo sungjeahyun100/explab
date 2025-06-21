@@ -398,7 +398,7 @@ void LossLayer::saveLayer(){
     std::string id_lossType = to_string(classid.loss);
 
     std::string id = id_layertype + "-" + id_row + "-" + id_col + "-" + id_lossType;
-    std::string path = WEIGHT_DATAPATH + id + "-" + getCurrentTimestamp() + ".bin";
+    std::string path = WEIGHT_DATAPATH + "-" + id + "-" + getCurrentTimestamp() + ".bin";
     std::ofstream ofs(path, std::ios::binary);
     try{
         fs::permissions(path, fs::perms::owner_all | fs::perms::group_read | fs::perms::others_read, fs::perm_options::add);
@@ -456,7 +456,7 @@ void Adam::saveWeight(){
     std::string id_epsilon = to_string(classid.epsilon);
 
     std::string id = id_optimize + id_inputSize + "-" + id_outputSize + "-" + id_lr + id_Init + "-" + id_beta1 + "-" + id_beta2 + "-" + id_epsilon;
-    std::string path = WEIGHT_DATAPATH + id + "-" + getCurrentTimestamp() + ".bin";
+    std::string path = WEIGHT_DATAPATH + "-" + id + "-" + getCurrentTimestamp() + ".bin";
     std::ofstream ofs(path, std::ios::binary);
     try{
         fs::permissions(path, fs::perms::owner_all | fs::perms::group_read | fs::perms::others_read, fs::perm_options::add);
@@ -603,7 +603,7 @@ void SGD::saveWeight(){
     std::string id_Init = to_string(classid.Init);
 
     std::string id = id_optimize + id_inputSize + "-" + id_outputSize + "-" + id_lr + "-" + id_Init; 
-    std::string path = WEIGHT_DATAPATH + id + "-" + getCurrentTimestamp() + ".bin";
+    std::string path = WEIGHT_DATAPATH + "-" + id + "-" + getCurrentTimestamp() + ".bin";
     std::ofstream ofs(path, std::ios::binary);
     try{
         fs::permissions(path, fs::perms::owner_all | fs::perms::group_read | fs::perms::others_read, fs::perm_options::add);
