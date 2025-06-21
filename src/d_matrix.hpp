@@ -97,6 +97,53 @@ public:
         CHECK_CUDA_ERROR(cudaMemcpy(d_data, other.d_data, rowSize * colSize * sizeof(T), cudaMemcpyDeviceToDevice));
     }
 
+        d_matrix(std::initializer_list<std::initializer_list<T>> list2d){
+        rowSize = static_cast<int>(list2d.size());
+        colSize = rowSize > 0 ? static_cast<int>(list2d.begin()->size()) : 0;
+        if (rowSize <= 0 || colSize <= 0) {
+          std::cerr << "[ERROR] Invalid init2d dimensions: "
+                    << rowSize << "x" << colSize << std::endl;
+          exit(1);
+        }
+    
+        // 3) 메모리 할당
+        int N = rowSize * colSize;
+        h_data = new T[N];
+        size_t bytes = N * sizeof(T);
+        CHECK_CUDA_ERROR(cudaMalloc(&d_data, bytes));
+    
+        // 4) 값 복사
+        int idx = 0;
+        for (auto& row : init2d) {
+          if (static_cast<int>(row.size()) != colSize) {
+            std::cerr << "[ERROR] Inconsistent column size in init2d\n";
+            exit(1);
+          }
+          for (auto& v : row) {
+            h_data[idx++] = v;
+          }
+        }
+        // 5) 호스트 → 디바이스 복사
+        CHECK_CUDA_ERROR(cudaMemcpy(d_data, h_data, bytes, cudaMemcpyHostToDevice));
+    }
+    
+    d_matrix(std::initializer_list<T> list) : rowSize(1), colSize(static_cast<int>(list.size())){
+        int N = rowSize * colSize;
+        // 호스트 메모리 할당
+        h_data = new T[N];
+        // 디바이스 메모리 할당
+        size_t bytes = N * sizeof(T);
+        CHECK_CUDA_ERROR(cudaMalloc(&d_data, bytes));
+    
+        // 값 복사
+        int i = 0;
+        for (auto& v : list) {
+          h_data[i++] = v;
+        }
+        // 호스트 → 디바이스
+        CHECK_CUDA_ERROR(cudaMemcpy(d_data, h_data, bytes, cudaMemcpyHostToDevice));
+    }
+
     // 복사 대입 연산자: 기존 리소스를 해제하고, 다른 행렬을 깊은 복사합니다.
     d_matrix<T>& operator=(const d_matrix<T>& other) {
         if (this != &other) {
