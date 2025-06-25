@@ -14,7 +14,7 @@ std::string getCurrentTimestamp()
 
 inline void createDirectory(std::string fileName)
 {
-    std::string path = WEIGHT_DATAPATH + fileName + getCurrentTimestamp() + ".bin";
+    std::string path = WEIGHT_DATAPATH + fileName + getCurrentTimestamp();
     std::filesystem::create_directory(path);
     std::error_code ec;
     std::filesystem::permissions(path, std::filesystem::perms::owner_all | std::filesystem::perms::others_all, ec);

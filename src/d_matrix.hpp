@@ -114,7 +114,7 @@ public:
     
         // 4) 값 복사
         int idx = 0;
-        for (auto& row : init2d) {
+        for (auto& row : list2d) {
           if (static_cast<int>(row.size()) != colSize) {
             std::cerr << "[ERROR] Inconsistent column size in init2d\n";
             exit(1);
@@ -127,7 +127,7 @@ public:
         CHECK_CUDA_ERROR(cudaMemcpy(d_data, h_data, bytes, cudaMemcpyHostToDevice));
     }
     
-    d_matrix(std::initializer_list<T> list) : rowSize(1), colSize(static_cast<int>(list.size())){
+    d_matrix(std::initializer_list<T> list) : rowSize(static_cast<int>(list.size())), colSize(1){
         int N = rowSize * colSize;
         // 호스트 메모리 할당
         h_data = new T[N];
@@ -205,6 +205,15 @@ public:
         return h_data[i * colSize + j];
     }
 
+    bool operator==(const d_matrix<T>& other) const noexcept {
+        if(colSize != other.colSize || rowSize != other.rowSize) return false;
+        int idx = colSize*rowSize;
+        for(int i = 0; i < idx; i++){
+            if(h_data[idx] != other.h_data[idx]) return false;
+        }
+        return true;
+    }
+
     // getDevPointer: 디바이스 메모리 포인터 반환
     T* getDevPointer() const { return d_data; }
 
@@ -238,6 +247,29 @@ public:
         return transposed;
     }
 };
+
+namespace std {
+  template<>
+  struct hash<d_matrix<double>> {
+    // 1) 기본 생성자와 소멸자를 명시적으로 default
+    hash() noexcept = default;
+    ~hash() noexcept = default;
+
+    // 2) 복사 생성자/대입 연산자는 컴파일러가 암시적으로 만들어 줌
+
+    // 3) 해시 함수 연산자
+    size_t operator()(d_matrix<double> const& M) const noexcept {
+      size_t h = 0xcbf29ce484222325ULL;  // FNV offset
+      int N = M.getRow() * M.getCol();
+      for (int i = 0; i < N; ++i) {
+        size_t hv = std::hash<double>{}( M.getHostPointer()[i] );
+        h ^= hv;
+        h *= 0x100000001b3ULL;            // FNV prime
+      }
+      return h;
+    }
+  };
+}
 
 
 // English: Overloads the stream insertion operator for printing a d_matrix object.

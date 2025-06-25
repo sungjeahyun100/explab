@@ -5,10 +5,10 @@
 std::vector<d_matrix<double>> X = {{0, 0}, {0, 1}, {1, 0}, {1, 1}};
 std::vector<d_matrix<double>> OR = {{0}, {1}, {1}, {0}};
 
-std::unordered_map<d_matrix<double>, d_matrix<double>> XOR = { {X.at(0), OR.at(0)},
-                                                               {X.at(1), OR.at(1)},
-                                                               {X.at(2), OR.at(2)},
-                                                               {X.at(3), OR.at(3)}};
+std::unordered_map<d_matrix<double>, d_matrix<double>> XOR = { {X[0], OR[0]},
+                                                               {X[1], OR[1]},
+                                                               {X[2], OR[2]},
+                                                               {X[3], OR[3]}};
 
 int main(){
     Adam inputlayer(2, 4, 0.0001, InitType::He);
@@ -24,8 +24,8 @@ int main(){
     for(int epoch = 1; epoch <= epochs; epoch++){
         double totalloss = 0.00;
         for(const auto& kv : XOR){
-            const d_matrix<double> input = kv.first;
-            const d_matrix<double> target = kv.second;
+            const d_matrix<double>& input = kv.first;
+            const d_matrix<double>& target = kv.second;
             const d_matrix<double> dummy(1, 1);
 
             inputlayer.feedforward(input);
@@ -51,4 +51,6 @@ int main(){
     outputlayer.saveWeight();
     Act3.saveLayer();
     loss.saveLayer();
+
+    return 0;
 }
